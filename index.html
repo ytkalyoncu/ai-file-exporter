@@ -1,0 +1,1513 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>AI Context Studio</title>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+
+            :root {
+                /* Colors */
+                --bg-dark: #09090b;
+                --bg-panel: rgba(24, 24, 27, 0.7);
+                --bg-hover: rgba(255, 255, 255, 0.05);
+                --border: rgba(255, 255, 255, 0.1);
+                --text-main: #e4e4e7;
+                --text-muted: #a1a1aa;
+                --accent: #6366f1;
+                --accent-hover: #4f46e5;
+                --accent-glow: rgba(99, 102, 241, 0.2);
+                --danger: #ef4444;
+                --success: #22c55e;
+                --warning: #eab308;
+                --folder-color: #fbbf24;
+                --file-color: #60a5fa;
+
+                /* Constants */
+                --font-sans: "Inter", sans-serif;
+                --font-mono: "JetBrains Mono", monospace;
+                --radius-md: 8px;
+                --radius-lg: 12px;
+                --transition: 0.2s ease;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                font-family: var(--font-sans);
+                background-color: var(--bg-dark);
+                color: var(--text-main);
+                height: 100vh;
+                overflow: hidden;
+                display: flex;
+                user-select: none;
+            }
+
+            /* Scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.15);
+                border-radius: 4px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.25);
+            }
+
+            /* Typography & Utils */
+            h1,
+            h2,
+            h3 {
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+            }
+            .text-sm {
+                font-size: 0.875rem;
+            }
+            .text-xs {
+                font-size: 0.75rem;
+            }
+            .font-mono {
+                font-family: var(--font-mono);
+            }
+            .flex {
+                display: flex;
+            }
+            .flex-col {
+                display: flex;
+                flex-direction: column;
+            }
+            .items-center {
+                display: flex;
+                align-items: center;
+            }
+            .justify-between {
+                display: flex;
+                justify-content: space-between;
+            }
+            .gap-2 {
+                gap: 0.5rem;
+            }
+            .gap-4 {
+                gap: 1rem;
+            }
+            .hidden {
+                display: none !important;
+            }
+
+            /* Layout */
+            #app {
+                display: flex;
+                width: 100%;
+                height: 100%;
+            }
+
+            .panel {
+                background: var(--bg-panel);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border-right: 1px solid var(--border);
+                display: flex;
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            #left-panel {
+                flex: 1;
+                max-width: 450px;
+            }
+            #right-panel {
+                flex: 1.5;
+                border-right: none;
+                border-left: 1px solid var(--border);
+            }
+
+            /* Inputs & Buttons */
+            input[type="text"],
+            textarea {
+                background: rgba(0, 0, 0, 0.3);
+                border: 1px solid var(--border);
+                color: var(--text-main);
+                border-radius: var(--radius-md);
+                padding: 0.5rem;
+                font-family: var(--font-mono);
+                font-size: 0.875rem;
+                outline: none;
+                transition: border var(--transition);
+            }
+            input[type="text"]:focus,
+            textarea:focus {
+                border-color: var(--accent);
+            }
+
+            button {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid var(--border);
+                color: var(--text-main);
+                padding: 0.4rem 0.8rem;
+                border-radius: var(--radius-md);
+                cursor: pointer;
+                font-family: var(--font-sans);
+                font-size: 0.875rem;
+                transition: all var(--transition);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.4rem;
+            }
+            button:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            button.primary {
+                background: var(--accent);
+                border-color: var(--accent);
+            }
+            button.primary:hover {
+                background: var(--accent-hover);
+                box-shadow: 0 0 12px var(--accent-glow);
+            }
+            button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            /* Custom Checkbox */
+            input[type="checkbox"] {
+                appearance: none;
+                width: 16px;
+                height: 16px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 4px;
+                background: rgba(0, 0, 0, 0.2);
+                cursor: pointer;
+                position: relative;
+                display: grid;
+                place-content: center;
+                transition: all 0.2s;
+            }
+            input[type="checkbox"]::before {
+                content: "";
+                width: 10px;
+                height: 10px;
+                transform: scale(0);
+                box-shadow: inset 1em 1em var(--text-main);
+                transform-origin: center;
+                clip-path: polygon(
+                    14% 44%,
+                    0 65%,
+                    50% 100%,
+                    100% 16%,
+                    80% 0%,
+                    43% 62%
+                );
+                transition: 120ms transform ease-in-out;
+            }
+            input[type="checkbox"]:checked {
+                background: var(--accent);
+                border-color: var(--accent);
+            }
+            input[type="checkbox"]:checked::before {
+                transform: scale(1);
+            }
+            input[type="checkbox"]:indeterminate {
+                background: var(--accent);
+                border-color: var(--accent);
+            }
+            input[type="checkbox"]:indeterminate::before {
+                clip-path: polygon(0 40%, 100% 40%, 100% 60%, 0 60%);
+                transform: scale(1);
+            }
+
+            /* Drag & Drop Zone */
+            #drop-zone {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                border: 2px dashed var(--border);
+                border-radius: var(--radius-lg);
+                margin: 1rem;
+                transition: all var(--transition);
+                cursor: pointer;
+                text-align: center;
+            }
+            #drop-zone.dragover {
+                border-color: var(--accent);
+                background: var(--accent-glow);
+            }
+            #drop-zone svg {
+                width: 48px;
+                height: 48px;
+                color: var(--text-muted);
+                margin-bottom: 1rem;
+            }
+
+            /* File Tree (Native Details/Summary) */
+            #tree-container {
+                flex: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
+                margin-top: 1rem;
+                padding-right: 0.5rem;
+            }
+            details {
+                margin-left: 1rem;
+            }
+            summary {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                cursor: pointer;
+                list-style: none; /* Hide default arrow */
+            }
+            summary::-webkit-details-marker {
+                display: none;
+            }
+            summary:hover,
+            .file-item:hover {
+                background: var(--bg-hover);
+            }
+
+            .file-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.25rem 0.5rem 0.25rem 2.5rem;
+                border-radius: 4px;
+                cursor: pointer;
+                position: relative;
+            }
+
+            /* Hover Actions */
+            .actions {
+                margin-left: auto;
+                display: flex;
+                gap: 0.25rem;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            summary:hover .actions,
+            .file-item:hover .actions {
+                opacity: 1;
+            }
+            .action-btn {
+                background: none;
+                border: none;
+                padding: 4px;
+                color: var(--text-muted);
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .action-btn:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: var(--text-main);
+            }
+            .action-btn.danger:hover {
+                color: var(--danger);
+            }
+
+            .icon-sm {
+                width: 16px;
+                height: 16px;
+                flex-shrink: 0;
+            }
+            .chevron {
+                transition: transform 0.2s;
+                color: var(--text-muted);
+            }
+            details[open] > summary > .chevron {
+                transform: rotate(90deg);
+            }
+
+            .name-label {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Stats & Token Bar */
+            .card {
+                background: rgba(0, 0, 0, 0.2);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-md);
+                padding: 1rem;
+                margin-bottom: 1rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            .progress-bg {
+                background: rgba(255, 255, 255, 0.1);
+                height: 6px;
+                border-radius: 3px;
+                overflow: hidden;
+            }
+            .progress-fill {
+                height: 100%;
+                background: var(--success);
+                transition:
+                    width 0.3s ease,
+                    background-color 0.3s;
+                width: 0%;
+            }
+
+            /* Output Formats */
+            .format-tabs {
+                display: flex;
+                gap: 0.25rem;
+                background: rgba(0, 0, 0, 0.3);
+                padding: 0.25rem;
+                border-radius: var(--radius-md);
+                border: 1px solid var(--border);
+            }
+            .tab-btn {
+                background: transparent;
+                border: none;
+                padding: 0.25rem 0.75rem;
+                border-radius: 4px;
+                font-weight: 500;
+            }
+            .tab-btn.active {
+                background: var(--accent);
+                color: white;
+            }
+
+            /* Textareas */
+            .code-box {
+                flex: 1;
+                resize: none;
+                white-space: pre;
+                line-height: 1.5;
+            }
+            .state-box {
+                height: 150px;
+                resize: none;
+            }
+
+            /* Utility Classes */
+            .text-blue {
+                color: var(--file-color);
+            }
+            .text-yellow {
+                color: var(--folder-color);
+            }
+            .text-green {
+                color: var(--success);
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <!-- LEFT PANEL: File Selection & Tree -->
+            <div id="left-panel" class="panel">
+                <div
+                    class="flex items-center justify-between"
+                    style="margin-bottom: 1rem"
+                >
+                    <h2 class="text-sm font-mono flex items-center gap-2">
+                        <svg
+                            class="icon-sm"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"
+                            />
+                        </svg>
+                        AI Context Studio
+                    </h2>
+                    <button
+                        id="btn-reset"
+                        class="hidden text-xs"
+                        title="Reset All"
+                    >
+                        Clear Workspace
+                    </button>
+                </div>
+
+                <!-- Uploader Zone -->
+                <div id="drop-zone">
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"
+                        />
+                    </svg>
+                    <h3>Drop project folder</h3>
+                    <p class="text-sm text-muted" style="margin-bottom: 1rem">
+                        or click to browse
+                    </p>
+                    <input
+                        type="file"
+                        id="file-input"
+                        webkitdirectory
+                        directory
+                        multiple
+                        class="hidden"
+                    />
+                </div>
+
+                <!-- Work Area (Hidden until files loaded) -->
+                <div
+                    id="work-area"
+                    class="hidden flex-col"
+                    style="flex: 1; overflow: hidden"
+                >
+                    <div
+                        class="flex gap-2 items-center"
+                        style="margin-bottom: 0.5rem"
+                    >
+                        <input
+                            type="text"
+                            id="search-input"
+                            placeholder="Search files..."
+                            style="flex: 1"
+                        />
+                    </div>
+                    <div
+                        class="flex justify-between items-center text-xs text-muted"
+                        style="margin-bottom: 0.5rem; padding: 0 0.5rem"
+                    >
+                        <label
+                            class="flex items-center gap-2"
+                            style="cursor: pointer"
+                        >
+                            <input
+                                type="checkbox"
+                                id="toggle-gitignore"
+                                checked
+                            />
+                            Apply .gitignore
+                        </label>
+                        <div class="flex gap-2">
+                            <button id="btn-expand" class="action-btn text-xs">
+                                Expand
+                            </button>
+                            <button
+                                id="btn-collapse"
+                                class="action-btn text-xs"
+                            >
+                                Collapse
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="tree-container"></div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: Preview, State & Export -->
+            <div id="right-panel" class="panel hidden">
+                <!-- Stats & Tokens -->
+                <div class="card">
+                    <div class="flex justify-between text-sm font-mono">
+                        <span
+                            >Selected Files:
+                            <strong id="stat-files" class="text-green"
+                                >0</strong
+                            ></span
+                        >
+                        <span
+                            >Est. Tokens: <strong id="stat-tokens">0</strong>
+                            <span class="text-muted">/ 1M</span></span
+                        >
+                    </div>
+                    <div class="progress-bg">
+                        <div id="token-bar" class="progress-fill"></div>
+                    </div>
+                </div>
+
+                <!-- Export Bar -->
+                <div
+                    class="flex items-center justify-between"
+                    style="margin-bottom: 1rem"
+                >
+                    <div class="format-tabs">
+                        <button class="tab-btn active" data-format="txt">
+                            TXT
+                        </button>
+                        <button class="tab-btn" data-format="md">MD</button>
+                        <button class="tab-btn" data-format="xml">XML</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="btn-copy-export" class="primary">
+                            <svg
+                                class="icon-sm"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <rect
+                                    x="9"
+                                    y="9"
+                                    width="13"
+                                    height="13"
+                                    rx="2"
+                                    ry="2"
+                                ></rect>
+                                <path
+                                    d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                                ></path>
+                            </svg>
+                            Copy for AI
+                        </button>
+                        <button id="btn-download">
+                            <svg
+                                class="icon-sm"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"
+                                />
+                            </svg>
+                            Download
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Layout Grid for FS & State -->
+                <div
+                    class="flex gap-4"
+                    style="flex: 1; overflow: hidden; margin-bottom: 1rem"
+                >
+                    <!-- File Structure Preview -->
+                    <div class="flex flex-col flex-1" style="min-width: 0">
+                        <div
+                            class="flex items-center justify-between"
+                            style="margin-bottom: 0.5rem"
+                        >
+                            <h3 class="text-sm">File Structure (FS)</h3>
+                            <div class="flex items-center gap-2">
+                                <label
+                                    class="text-xs text-muted flex items-center gap-1"
+                                    style="cursor: pointer"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        id="fs-selected-only"
+                                        checked
+                                    />
+                                    Selected Only
+                                </label>
+                                <button
+                                    id="btn-copy-fs"
+                                    class="action-btn"
+                                    title="Copy Structure Only"
+                                >
+                                    <svg
+                                        class="icon-sm"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <rect
+                                            x="9"
+                                            y="9"
+                                            width="13"
+                                            height="13"
+                                            rx="2"
+                                            ry="2"
+                                        ></rect>
+                                        <path
+                                            d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                                        ></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <textarea
+                            id="fs-preview"
+                            class="code-box"
+                            readonly
+                            placeholder="Structure will appear here..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Selection State -->
+                    <div class="flex flex-col" style="flex: 0.8; min-width: 0">
+                        <h3 class="text-sm" style="margin-bottom: 0.5rem">
+                            Selection State
+                        </h3>
+                        <textarea
+                            id="state-input"
+                            class="code-box state-box"
+                            style="flex: 1"
+                            placeholder="Paste state here...&#10;&#10;+ src/&#10;- src/ignore.ts"
+                        ></textarea>
+                        <p
+                            class="text-xs text-muted"
+                            style="margin-top: 0.5rem; line-height: 1.4"
+                        >
+                            <strong>+</strong> path/ (Selected)<br />
+                            <strong>-</strong> path/ (Excluded/Hidden)<br />
+                            <em>Edit and click outside to apply.</em>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SVGs Templates -->
+        <template id="icon-chevron"
+            ><svg
+                class="icon-sm chevron"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M9 18l6-6-6-6" /></svg
+        ></template>
+        <template id="icon-folder"
+            ><svg
+                class="icon-sm text-yellow"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path
+                    d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                /></svg
+        ></template>
+        <template id="icon-file"
+            ><svg
+                class="icon-sm text-blue"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path
+                    d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"
+                ></path>
+                <polyline points="13 2 13 9 20 9"></polyline></svg
+        ></template>
+        <template id="icon-copy"
+            ><svg
+                class="icon-sm"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path
+                    d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                ></path></svg
+        ></template>
+        <template id="icon-eye-off"
+            ><svg
+                class="icon-sm"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                ></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line></svg
+        ></template>
+
+        <script>
+            /**
+             * CORE STATE & CONFIG
+             */
+            const TOKEN_LIMIT = 1000000;
+            const BINARY_EXTS = new Set([
+                "png",
+                "jpg",
+                "jpeg",
+                "gif",
+                "ico",
+                "svg",
+                "webp",
+                "mp4",
+                "mp3",
+                "wav",
+                "pdf",
+                "zip",
+                "tar",
+                "gz",
+                "exe",
+                "dll",
+                "pyc",
+                "class",
+                "jar",
+                "woff",
+                "woff2",
+                "ttf",
+                "eot",
+                "bin",
+                "iso",
+            ]);
+            const IGNORED_DIRS_DEFAULT = [
+                ".git",
+                "node_modules",
+                ".next",
+                "dist",
+                "build",
+                "coverage",
+            ];
+
+            let appState = {
+                files: [], // { path, name, size, fileRef, isSelected, isExcluded, isGitignored }
+                gitignoreRules: [],
+                useGitignore: true,
+                searchQuery: "",
+                format: "txt", // txt, md, xml
+                fsSelectedOnly: true,
+                isProcessing: false,
+            };
+
+            /**
+             * UTILS
+             */
+            const $ = (id) => document.getElementById(id);
+            const getTemplate = (id) => document.getElementById(id).innerHTML;
+            const estimateTokens = (size) => Math.ceil(size / 4);
+
+            function parseGitignore(content) {
+                const lines = content
+                    .split("\n")
+                    .map((l) => l.trim())
+                    .filter((l) => l && !l.startsWith("#"));
+                return (path) => {
+                    return lines.some((pattern) => {
+                        const cleanPattern = pattern
+                            .replace(/^\//, "")
+                            .replace(/\/$/, "");
+                        if (cleanPattern.includes("*")) {
+                            const regex = new RegExp(
+                                "^.*" +
+                                    cleanPattern.replace(/\*/g, ".*") +
+                                    ".*$",
+                            );
+                            return regex.test(path);
+                        }
+                        return (
+                            path.includes(cleanPattern + "/") ||
+                            path.endsWith(cleanPattern) ||
+                            path === cleanPattern
+                        );
+                    });
+                };
+            }
+
+            // Show temporary feedback on button
+            function showFeedback(btn, text, originalText, originalIcon = "") {
+                btn.innerHTML = text;
+                setTimeout(
+                    () => (btn.innerHTML = originalIcon + originalText),
+                    2000,
+                );
+            }
+
+            /**
+             * FILE SYSTEM PARSING
+             */
+            async function processFileSystem(items) {
+                appState.files = [];
+                appState.gitignoreRules = [];
+
+                // First pass: Collect all files and find .gitignore
+                const entries = [];
+
+                // Fallback for input[type=file]
+                if (items instanceof FileList) {
+                    for (let file of items) {
+                        const path = file.webkitRelativePath || file.name;
+                        entries.push({ file, path, name: file.name });
+                    }
+                } else {
+                    // Drag & Drop DataTransferItems
+                    const processEntry = async (entry, path = "") => {
+                        if (!entry) return;
+                        const fullPath = path + entry.name;
+                        if (entry.isFile) {
+                            const file = await new Promise((res) =>
+                                entry.file(res),
+                            );
+                            entries.push({
+                                file,
+                                path: fullPath,
+                                name: entry.name,
+                            });
+                        } else if (entry.isDirectory) {
+                            const reader = entry.createReader();
+                            const readAll = async () => {
+                                let results = [];
+                                let read;
+                                do {
+                                    read = await new Promise((res) =>
+                                        reader.readEntries(res),
+                                    );
+                                    results.push(...read);
+                                } while (read.length > 0);
+                                return results;
+                            };
+                            const children = await readAll();
+                            for (const child of children)
+                                await processEntry(child, fullPath + "/");
+                        }
+                    };
+
+                    const promises = Array.from(items)
+                        .filter((i) => i.kind === "file")
+                        .map((i) => processEntry(i.webkitGetAsEntry()));
+                    await Promise.all(promises);
+                }
+
+                // Process found files
+                for (const item of entries) {
+                    const ext = item.name.split(".").pop().toLowerCase();
+                    if (BINARY_EXTS.has(ext)) continue;
+
+                    // Setup default ignores
+                    let isGitignored = IGNORED_DIRS_DEFAULT.some((d) =>
+                        item.path.includes(d + "/"),
+                    );
+
+                    // Load gitignore rules
+                    if (item.name === ".gitignore") {
+                        const content = await item.file.text();
+                        appState.gitignoreRules.push(parseGitignore(content));
+                    }
+
+                    appState.files.push({
+                        path: item.path,
+                        name: item.name,
+                        size: item.file.size,
+                        fileRef: item.file,
+                        isSelected: !isGitignored,
+                        isExcluded: false,
+                        isGitignored: isGitignored,
+                    });
+                }
+
+                applyGitignoreToState();
+                renderApp();
+            }
+
+            function applyGitignoreToState() {
+                appState.files.forEach((f) => {
+                    if (!f.isGitignored && appState.gitignoreRules.length > 0) {
+                        const ignored = appState.gitignoreRules.some((rule) =>
+                            rule(f.path),
+                        );
+                        if (ignored) f.isGitignored = true;
+                    }
+
+                    if (appState.useGitignore && f.isGitignored) {
+                        f.isSelected = false;
+                    } else if (
+                        !appState.useGitignore &&
+                        f.isGitignored &&
+                        !f.isExcluded
+                    ) {
+                        f.isSelected = true; // restore selection if gitignore disabled
+                    }
+                });
+            }
+
+            /**
+             * TREE RENDERING
+             */
+            function renderApp() {
+                buildTreeUI();
+                updateDerivedState();
+            }
+
+            function updateDerivedState() {
+                updateStats();
+                generateFS();
+                generateStateText();
+            }
+
+            function getVisibleFiles() {
+                return appState.files.filter((f) => {
+                    if (f.isExcluded) return false;
+                    if (appState.useGitignore && f.isGitignored) return false;
+                    if (
+                        appState.searchQuery &&
+                        !f.path.toLowerCase().includes(appState.searchQuery)
+                    )
+                        return false;
+                    return true;
+                });
+            }
+
+            function buildTreeUI() {
+                const container = $("tree-container");
+                container.innerHTML = "";
+
+                const visibleFiles = getVisibleFiles();
+                if (visibleFiles.length === 0) {
+                    container.innerHTML =
+                        '<div class="text-sm text-muted text-center mt-4">No files found.</div>';
+                    return;
+                }
+
+                // Build hierarchical object
+                const root = {};
+                visibleFiles.forEach((f) => {
+                    const parts = f.path.split("/");
+                    let current = root;
+                    parts.forEach((part, i) => {
+                        const isLast = i === parts.length - 1;
+                        if (!current[part]) {
+                            current[part] = isLast ? f : {};
+                        }
+                        if (!isLast) current = current[part];
+                    });
+                });
+
+                function createDOMNode(obj, pathPrefix = "") {
+                    const keys = Object.keys(obj).sort((a, b) => {
+                        const isDirA = !obj[a].fileRef;
+                        const isDirB = !obj[b].fileRef;
+                        if (isDirA === isDirB) return a.localeCompare(b);
+                        return isDirA ? -1 : 1;
+                    });
+
+                    const fragment = document.createDocumentFragment();
+
+                    keys.forEach((key) => {
+                        const item = obj[key];
+                        const currentPath = pathPrefix
+                            ? `${pathPrefix}/${key}`
+                            : key;
+                        const isDir = !item.fileRef;
+
+                        if (isDir) {
+                            const details = document.createElement("details");
+                            details.open = appState.searchQuery.length > 0; // Auto expand on search
+
+                            const summary = document.createElement("summary");
+
+                            // Calculate folder state
+                            const folderFiles = appState.files.filter(
+                                (f) =>
+                                    f.path.startsWith(currentPath + "/") &&
+                                    !f.isExcluded &&
+                                    (!appState.useGitignore || !f.isGitignored),
+                            );
+                            const selectedCount = folderFiles.filter(
+                                (f) => f.isSelected,
+                            ).length;
+
+                            const cb = document.createElement("input");
+                            cb.type = "checkbox";
+                            if (selectedCount > 0) {
+                                cb.checked =
+                                    selectedCount === folderFiles.length;
+                                cb.indeterminate =
+                                    selectedCount < folderFiles.length;
+                            } else {
+                                cb.checked = false;
+                            }
+
+                            cb.onclick = (e) => {
+                                e.stopPropagation();
+                                const newState = e.target.checked;
+                                folderFiles.forEach(
+                                    (f) => (f.isSelected = newState),
+                                );
+                                renderApp(); // Heavy, but keeps UI in sync. Fast enough for vanilla.
+                            };
+
+                            const actions = document.createElement("div");
+                            actions.className = "actions";
+                            actions.innerHTML = `
+                    <button class="action-btn danger" title="Exclude Folder" onclick="excludePath(event, '${currentPath}/')">${getTemplate("icon-eye-off")}</button>
+                `;
+
+                            summary.innerHTML = `${getTemplate("icon-chevron")} ${cb.outerHTML} ${getTemplate("icon-folder")} <span class="name-label font-mono text-sm">${key}</span>`;
+                            // Re-attach listeners because innerHTML wiped them
+                            summary.querySelector("input").onclick = cb.onclick;
+                            summary.appendChild(actions);
+
+                            details.appendChild(summary);
+                            details.appendChild(
+                                createDOMNode(item, currentPath),
+                            );
+                            fragment.appendChild(details);
+                        } else {
+                            // File Row
+                            const div = document.createElement("div");
+                            div.className = "file-item";
+
+                            const cb = document.createElement("input");
+                            cb.type = "checkbox";
+                            cb.checked = item.isSelected;
+                            cb.onclick = (e) => {
+                                e.stopPropagation();
+                                item.isSelected = e.target.checked;
+                                updateDerivedState();
+                                // Just update parent checkboxes visually instead of full re-render for performance
+                                updateParentCheckboxes(cb);
+                            };
+
+                            const actions = document.createElement("div");
+                            actions.className = "actions";
+                            actions.innerHTML = `
+                    <button class="action-btn" title="Copy Content" onclick="copyFileContent(event, '${item.path}')">${getTemplate("icon-copy")}</button>
+                    <button class="action-btn danger" title="Exclude File" onclick="excludePath(event, '${item.path}')">${getTemplate("icon-eye-off")}</button>
+                `;
+
+                            div.innerHTML = `${cb.outerHTML} ${getTemplate("icon-file")} <span class="name-label font-mono text-sm">${key}</span>`;
+                            div.querySelector("input").onclick = cb.onclick;
+                            div.appendChild(actions);
+
+                            div.onclick = () =>
+                                div.querySelector("input").click();
+
+                            fragment.appendChild(div);
+                        }
+                    });
+                    return fragment;
+                }
+
+                container.appendChild(createDOMNode(root));
+            }
+
+            // Quick DOM update for checkboxes to avoid full re-render
+            function updateParentCheckboxes(el) {
+                let parent = el.closest("details");
+                while (parent) {
+                    const summaryCb = parent.querySelector(
+                        'summary > input[type="checkbox"]',
+                    );
+                    if (summaryCb) {
+                        const childCbs = Array.from(
+                            parent.querySelectorAll(
+                                ":scope > details > summary > input, :scope > .file-item > input",
+                            ),
+                        );
+                        const checked = childCbs.filter(
+                            (c) => c.checked,
+                        ).length;
+                        const indet = childCbs.filter(
+                            (c) => c.indeterminate,
+                        ).length;
+
+                        if (checked === 0 && indet === 0) {
+                            summaryCb.checked = false;
+                            summaryCb.indeterminate = false;
+                        } else if (checked === childCbs.length && indet === 0) {
+                            summaryCb.checked = true;
+                            summaryCb.indeterminate = false;
+                        } else {
+                            summaryCb.checked = false;
+                            summaryCb.indeterminate = true;
+                        }
+                    }
+                    parent = parent.parentElement.closest("details");
+                }
+            }
+
+            /**
+             * ACTIONS
+             */
+            window.excludePath = (e, path) => {
+                e.stopPropagation();
+                appState.files.forEach((f) => {
+                    if (f.path === path || f.path.startsWith(path)) {
+                        f.isExcluded = true;
+                        f.isSelected = false;
+                    }
+                });
+                renderApp();
+            };
+
+            window.copyFileContent = async (e, path) => {
+                e.stopPropagation();
+                const btn = e.currentTarget;
+                const fileNode = appState.files.find((f) => f.path === path);
+                if (fileNode) {
+                    const content = await fileNode.fileRef.text();
+                    const text = `// File: ${path}\n${content}`;
+                    navigator.clipboard.writeText(text);
+                    showFeedback(
+                        btn,
+                        '<span class="text-xs text-green">Copied</span>',
+                        "",
+                        getTemplate("icon-copy"),
+                    );
+                }
+            };
+
+            function updateStats() {
+                const selected = appState.files.filter(
+                    (f) => f.isSelected && !f.isExcluded,
+                );
+                const size = selected.reduce((acc, f) => acc + f.size, 0);
+                const tokens = estimateTokens(size);
+
+                $("stat-files").innerText = selected.length;
+                $("stat-tokens").innerText = (tokens / 1000).toFixed(1) + "k";
+
+                let pct = Math.min((tokens / TOKEN_LIMIT) * 100, 100);
+                const bar = $("token-bar");
+                bar.style.width = pct + "%";
+
+                if (pct > 90) bar.style.backgroundColor = "var(--danger)";
+                else if (pct > 75) bar.style.backgroundColor = "var(--warning)";
+                else bar.style.backgroundColor = "var(--success)";
+            }
+
+            /**
+             * FILE STRUCTURE (FS) GENERATOR
+             */
+            function generateFS() {
+                let files = getVisibleFiles();
+                if (appState.fsSelectedOnly) {
+                    files = files.filter((f) => f.isSelected);
+                }
+
+                const map = new Map();
+                files.forEach((f) => {
+                    const parts = f.path.split("/");
+                    const name = parts.pop();
+                    const dir = parts.length > 0 ? parts.join("/") + "/" : "/";
+                    if (!map.has(dir)) map.set(dir, []);
+                    map.get(dir).push(name);
+                });
+
+                const sortedDirs = Array.from(map.keys()).sort();
+                let out = "";
+                sortedDirs.forEach((dir) => {
+                    out += `${dir}\n* ${map.get(dir).join(", ")}\n\n`;
+                });
+
+                $("fs-preview").value = out.trim();
+            }
+
+            /**
+             * STATE GENERATOR & PARSER (+ / - logic)
+             */
+            function generateStateText() {
+                // We want the most compact representation using folders.
+                // 1. Group by directories
+                let dirs = new Set();
+                appState.files.forEach((f) => {
+                    const parts = f.path.split("/");
+                    let current = "";
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        current += parts[i] + "/";
+                        dirs.add(current);
+                    }
+                });
+                // Add root
+                dirs.add("/");
+
+                // Sort descending by depth to process children before parents
+                const sortedDirs = Array.from(dirs).sort(
+                    (a, b) => b.split("/").length - a.split("/").length,
+                );
+
+                // Track what has been handled
+                let handledPaths = new Set();
+                let stateLines = [];
+
+                // Simple top-down approach for clear output
+                const allFiles = appState.files;
+
+                // Check Excluded files First
+                const excluded = allFiles.filter((f) => f.isExcluded);
+                excluded.forEach((f) => stateLines.push(`- ${f.path}`));
+
+                // Helper to check if a directory is fully selected
+                function getDirState(dirPath) {
+                    const children = allFiles.filter(
+                        (f) =>
+                            (dirPath === "/"
+                                ? true
+                                : f.path.startsWith(dirPath)) && !f.isExcluded,
+                    );
+                    if (children.length === 0) return "empty";
+                    const selected = children.filter((f) => f.isSelected);
+                    if (selected.length === children.length) return "full";
+                    if (selected.length > 0) return "partial";
+                    return "none";
+                }
+
+                // Identify top level full directories
+                const topDirs = Array.from(dirs).sort();
+                const processedDirs = new Set();
+
+                topDirs.forEach((dir) => {
+                    // Skip if parent is already fully selected
+                    const parent = dir.split("/").slice(0, -2).join("/") + "/";
+                    if (parent !== "/" && processedDirs.has(parent)) return;
+
+                    const state = getDirState(dir);
+                    if (state === "full") {
+                        stateLines.push(`+ ${dir}`);
+                        processedDirs.add(dir);
+                        // Mark all child files as handled
+                        allFiles
+                            .filter((f) => f.path.startsWith(dir))
+                            .forEach((f) => handledPaths.add(f.path));
+                    }
+                });
+
+                // Add remaining individual selected files
+                allFiles.forEach((f) => {
+                    if (
+                        f.isSelected &&
+                        !f.isExcluded &&
+                        !handledPaths.has(f.path)
+                    ) {
+                        stateLines.push(`+ ${f.path}`);
+                    }
+                });
+
+                $("state-input").value = stateLines.sort().join("\n");
+            }
+
+            function parseStateText() {
+                const text = $("state-input").value;
+                const lines = text
+                    .split("\n")
+                    .map((l) => l.trim())
+                    .filter(Boolean);
+
+                // Reset all non-gitignored to unselected, and remove explicit exclusions
+                appState.files.forEach((f) => {
+                    f.isExcluded = false;
+                    f.isSelected = false; // We build selection purely from the text now
+                });
+
+                lines.forEach((line) => {
+                    const action = line.charAt(0);
+                    const path = line.slice(1).trim();
+
+                    if (!path) return;
+
+                    appState.files.forEach((f) => {
+                        const matches =
+                            f.path === path ||
+                            (path.endsWith("/") && f.path.startsWith(path)) ||
+                            (path === "/" && true);
+                        if (matches) {
+                            if (action === "+") {
+                                f.isSelected = true;
+                                f.isExcluded = false;
+                            }
+                            if (action === "-") {
+                                f.isExcluded = true;
+                                f.isSelected = false;
+                            }
+                        }
+                    });
+                });
+
+                renderApp();
+            }
+
+            /**
+             * EXPORT LOGIC
+             */
+            async function generateExportContent() {
+                const selectedFiles = appState.files.filter(
+                    (f) => f.isSelected && !f.isExcluded,
+                );
+                if (selectedFiles.length === 0) return "No files selected.";
+
+                const fsString = $("fs-preview").value;
+                let out = "";
+
+                if (appState.format === "txt") {
+                    out += `FILE STRUCTURE:\n${fsString}\n\n`;
+                    out += `================================================================\n`;
+                    out += `FILES EXPORT (${selectedFiles.length} files)\n`;
+                    out += `================================================================\n\n`;
+
+                    for (const file of selectedFiles) {
+                        const content = await file.fileRef.text();
+                        out += `--- BEGIN FILE: ${file.path} ---\n${content}\n--- END FILE: ${file.path} ---\n\n`;
+                    }
+                } else if (appState.format === "md") {
+                    out += `# Project Export\n\n## File Structure\n\`\`\`text\n${fsString}\n\`\`\`\n\n## Files\n\n`;
+                    for (const file of selectedFiles) {
+                        const ext = file.name.split(".").pop();
+                        const content = await file.fileRef.text();
+                        out += `### \`${file.path}\`\n\`\`\`${ext}\n${content}\n\`\`\`\n\n`;
+                    }
+                } else if (appState.format === "xml") {
+                    out += `<project>\n  <file_structure><![CDATA[\n${fsString}\n  ]]></file_structure>\n\n`;
+                    for (const file of selectedFiles) {
+                        const content = await file.fileRef.text();
+                        out += `  <file path="${file.path}">\n<![CDATA[\n${content}\n]]>\n  </file>\n`;
+                    }
+                    out += `</project>`;
+                }
+
+                return out;
+            }
+
+            /**
+             * EVENT LISTENERS
+             */
+            const dropZone = $("drop-zone");
+            const fileInput = $("file-input");
+
+            // Drag & Drop
+            dropZone.ondragover = (e) => {
+                e.preventDefault();
+                dropZone.classList.add("dragover");
+            };
+            dropZone.ondragleave = (e) => {
+                e.preventDefault();
+                dropZone.classList.remove("dragover");
+            };
+            dropZone.ondrop = async (e) => {
+                e.preventDefault();
+                dropZone.classList.remove("dragover");
+                if (e.dataTransfer.items) {
+                    $("drop-zone").classList.add("hidden");
+                    $("work-area").classList.remove("hidden");
+                    $("left-panel").style.maxWidth = "400px";
+                    $("right-panel").classList.remove("hidden");
+                    $("btn-reset").classList.remove("hidden");
+                    await processFileSystem(e.dataTransfer.items);
+                }
+            };
+
+            // File Input Click
+            dropZone.onclick = () => fileInput.click();
+            fileInput.onchange = async (e) => {
+                if (e.target.files.length > 0) {
+                    $("drop-zone").classList.add("hidden");
+                    $("work-area").classList.remove("hidden");
+                    $("left-panel").style.maxWidth = "400px";
+                    $("right-panel").classList.remove("hidden");
+                    $("btn-reset").classList.remove("hidden");
+                    await processFileSystem(e.target.files);
+                }
+            };
+
+            // Top Actions
+            $("btn-reset").onclick = () => location.reload();
+
+            // Left Panel Actions
+            $("search-input").oninput = (e) => {
+                appState.searchQuery = e.target.value.toLowerCase();
+                renderApp();
+            };
+            $("toggle-gitignore").onchange = (e) => {
+                appState.useGitignore = e.target.checked;
+                applyGitignoreToState();
+                renderApp();
+            };
+            $("btn-expand").onclick = () =>
+                document
+                    .querySelectorAll("details")
+                    .forEach((d) => (d.open = true));
+            $("btn-collapse").onclick = () =>
+                document
+                    .querySelectorAll("details")
+                    .forEach((d) => (d.open = false));
+
+            // Right Panel Actions
+            $("fs-selected-only").onchange = (e) => {
+                appState.fsSelectedOnly = e.target.checked;
+                generateFS();
+            };
+
+            $("btn-copy-fs").onclick = () => {
+                navigator.clipboard.writeText($("fs-preview").value);
+                showFeedback(
+                    $("btn-copy-fs"),
+                    '<span class="text-xs text-green">Copied!</span>',
+                    "",
+                    getTemplate("icon-copy"),
+                );
+            };
+
+            document.querySelectorAll(".tab-btn").forEach((btn) => {
+                btn.onclick = () => {
+                    document
+                        .querySelectorAll(".tab-btn")
+                        .forEach((b) => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    appState.format = btn.dataset.format;
+                };
+            });
+
+            $("state-input").onblur = parseStateText;
+
+            // Export Buttons
+            $("btn-copy-export").onclick = async function () {
+                const originalText = "Copy for AI";
+                const originalIcon = getTemplate("icon-copy");
+                this.innerHTML = "Processing...";
+                try {
+                    const content = await generateExportContent();
+                    await navigator.clipboard.writeText(content);
+                    showFeedback(
+                        this,
+                        `${originalIcon} Copied!`,
+                        originalText,
+                        originalIcon,
+                    );
+                } catch (e) {
+                    this.innerHTML = `Error!`;
+                    setTimeout(
+                        () => (this.innerHTML = originalIcon + originalText),
+                        2000,
+                    );
+                }
+            };
+
+            $("btn-download").onclick = async function () {
+                const originalText = "Download";
+                const icon =
+                    '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>';
+                this.innerHTML = "Preparing...";
+                try {
+                    const content = await generateExportContent();
+                    const blob = new Blob([content], { type: "text/plain" });
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `context_export.${appState.format}`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    showFeedback(this, `${icon} Done!`, originalText, icon);
+                } catch (e) {
+                    this.innerHTML = "Error!";
+                    setTimeout(
+                        () => (this.innerHTML = icon + originalText),
+                        2000,
+                    );
+                }
+            };
+        </script>
+    </body>
+</html>
