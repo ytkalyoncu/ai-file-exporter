@@ -5,34 +5,36 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>AI Context Studio</title>
         <style>
-            @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+            @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
             :root {
-                /* Colors */
-                --bg-dark: #09090b;
-                --bg-panel: rgba(24, 24, 27, 0.7);
-                --bg-hover: rgba(255, 255, 255, 0.05);
-                --border: rgba(255, 255, 255, 0.1);
-                --text-main: #e4e4e7;
-                --text-muted: #a1a1aa;
+                --bg-dark: #08090c;
+                --bg-panel: rgba(16, 18, 24, 0.85);
+                --bg-hover: rgba(255, 255, 255, 0.04);
+                --bg-active: rgba(99, 102, 241, 0.08);
+                --border: rgba(255, 255, 255, 0.07);
+                --border-focus: rgba(99, 102, 241, 0.5);
+                --text-main: #e2e4e9;
+                --text-muted: #6b7280;
                 --accent: #6366f1;
                 --accent-hover: #4f46e5;
-                --accent-glow: rgba(99, 102, 241, 0.2);
+                --accent-glow: rgba(99, 102, 241, 0.15);
                 --danger: #ef4444;
-                --success: #22c55e;
-                --warning: #eab308;
+                --danger-bg: rgba(239, 68, 68, 0.1);
+                --success: #34d399;
+                --warning: #fbbf24;
                 --folder-color: #fbbf24;
                 --file-color: #60a5fa;
-
-                /* Constants */
-                --font-sans: "Inter", sans-serif;
+                --font-sans: "DM Sans", system-ui, sans-serif;
                 --font-mono: "JetBrains Mono", monospace;
-                --radius-md: 8px;
+                --radius: 8px;
                 --radius-lg: 12px;
-                --transition: 0.2s ease;
+                --transition: 0.15s ease;
             }
 
-            * {
+            *,
+            *::before,
+            *::after {
                 box-sizing: border-box;
                 margin: 0;
                 padding: 0;
@@ -40,69 +42,53 @@
 
             body {
                 font-family: var(--font-sans);
-                background-color: var(--bg-dark);
+                background: var(--bg-dark);
                 color: var(--text-main);
                 height: 100vh;
                 overflow: hidden;
                 display: flex;
-                user-select: none;
             }
 
             /* Scrollbar */
             ::-webkit-scrollbar {
-                width: 8px;
-                height: 8px;
+                width: 6px;
+                height: 6px;
             }
             ::-webkit-scrollbar-track {
                 background: transparent;
             }
             ::-webkit-scrollbar-thumb {
-                background: rgba(255, 255, 255, 0.15);
-                border-radius: 4px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 3px;
             }
             ::-webkit-scrollbar-thumb:hover {
-                background: rgba(255, 255, 255, 0.25);
+                background: rgba(255, 255, 255, 0.2);
             }
 
-            /* Typography & Utils */
-            h1,
-            h2,
-            h3 {
-                font-weight: 600;
-                margin-bottom: 0.5rem;
+            /* Utility */
+            .hidden {
+                display: none !important;
             }
-            .text-sm {
-                font-size: 0.875rem;
+            .mono {
+                font-family: var(--font-mono);
+            }
+            .muted {
+                color: var(--text-muted);
             }
             .text-xs {
                 font-size: 0.75rem;
             }
-            .font-mono {
-                font-family: var(--font-mono);
+            .text-sm {
+                font-size: 0.8125rem;
             }
-            .flex {
-                display: flex;
+            .text-green {
+                color: var(--success);
             }
-            .flex-col {
-                display: flex;
-                flex-direction: column;
+            .text-yellow {
+                color: var(--folder-color);
             }
-            .items-center {
-                display: flex;
-                align-items: center;
-            }
-            .justify-between {
-                display: flex;
-                justify-content: space-between;
-            }
-            .gap-2 {
-                gap: 0.5rem;
-            }
-            .gap-4 {
-                gap: 1rem;
-            }
-            .hidden {
-                display: none !important;
+            .text-blue {
+                color: var(--file-color);
             }
 
             /* Layout */
@@ -114,59 +100,59 @@
 
             .panel {
                 background: var(--bg-panel);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                border-right: 1px solid var(--border);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
                 display: flex;
                 flex-direction: column;
                 padding: 1rem;
             }
-
             #left-panel {
                 flex: 1;
-                max-width: 450px;
+                max-width: 440px;
+                border-right: 1px solid var(--border);
             }
             #right-panel {
                 flex: 1.2;
-                border-right: none;
                 border-left: 1px solid var(--border);
             }
 
-            /* Inputs & Buttons */
+            /* Inputs */
             input[type="text"],
             textarea {
-                background: rgba(0, 0, 0, 0.3);
+                background: rgba(0, 0, 0, 0.35);
                 border: 1px solid var(--border);
                 color: var(--text-main);
-                border-radius: var(--radius-md);
-                padding: 0.75rem;
+                border-radius: var(--radius);
+                padding: 0.6rem 0.75rem;
                 font-family: var(--font-mono);
-                font-size: 0.875rem;
+                font-size: 0.8125rem;
                 outline: none;
                 transition: border var(--transition);
             }
             input[type="text"]:focus,
             textarea:focus {
-                border-color: var(--accent);
+                border-color: var(--border-focus);
             }
 
+            /* Buttons */
             button {
-                background: rgba(255, 255, 255, 0.05);
+                background: rgba(255, 255, 255, 0.04);
                 border: 1px solid var(--border);
                 color: var(--text-main);
-                padding: 0.4rem 0.8rem;
-                border-radius: var(--radius-md);
+                padding: 0.375rem 0.75rem;
+                border-radius: var(--radius);
                 cursor: pointer;
                 font-family: var(--font-sans);
-                font-size: 0.875rem;
+                font-size: 0.8125rem;
                 transition: all var(--transition);
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                gap: 0.4rem;
+                gap: 0.375rem;
+                white-space: nowrap;
             }
             button:hover {
-                background: rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.08);
             }
             button.primary {
                 background: var(--accent);
@@ -174,31 +160,32 @@
             }
             button.primary:hover {
                 background: var(--accent-hover);
-                box-shadow: 0 0 12px var(--accent-glow);
+                box-shadow: 0 0 16px var(--accent-glow);
             }
             button:disabled {
-                opacity: 0.5;
+                opacity: 0.4;
                 cursor: not-allowed;
             }
 
-            /* Custom Checkbox */
+            /* Checkbox */
             input[type="checkbox"] {
                 appearance: none;
-                width: 16px;
-                height: 16px;
-                border: 1px solid rgba(255, 255, 255, 0.3);
-                border-radius: 4px;
+                width: 15px;
+                height: 15px;
+                border: 1px solid rgba(255, 255, 255, 0.25);
+                border-radius: 3px;
                 background: rgba(0, 0, 0, 0.2);
                 cursor: pointer;
                 position: relative;
                 display: grid;
                 place-content: center;
-                transition: all 0.2s;
+                flex-shrink: 0;
+                transition: all 0.15s;
             }
             input[type="checkbox"]::before {
                 content: "";
-                width: 10px;
-                height: 10px;
+                width: 9px;
+                height: 9px;
                 transform: scale(0);
                 box-shadow: inset 1em 1em var(--text-main);
                 transform-origin: center;
@@ -210,7 +197,7 @@
                     80% 0%,
                     43% 62%
                 );
-                transition: 120ms transform ease-in-out;
+                transition: 100ms transform ease-in-out;
             }
             input[type="checkbox"]:checked {
                 background: var(--accent);
@@ -228,14 +215,14 @@
                 transform: scale(1);
             }
 
-            /* Drag & Drop Zone */
+            /* Drop zone */
             #drop-zone {
                 flex: 1;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                border: 2px dashed var(--border);
+                border: 2px dashed rgba(255, 255, 255, 0.1);
                 border-radius: var(--radius-lg);
                 margin: 1rem;
                 transition: all var(--transition);
@@ -247,24 +234,28 @@
                 background: var(--accent-glow);
             }
             #drop-zone svg {
-                width: 48px;
-                height: 48px;
+                width: 40px;
+                height: 40px;
                 color: var(--text-muted);
-                margin-bottom: 1rem;
+                margin-bottom: 0.75rem;
+            }
+            #drop-zone h3 {
+                font-size: 0.9375rem;
+                font-weight: 600;
+                margin-bottom: 0.25rem;
             }
 
-            /* File Tree (Native Details/Summary) */
+            /* Tree */
             #tree-container {
                 flex: 1;
                 overflow-y: auto;
                 overflow-x: hidden;
-                margin-top: 1rem;
-                padding-right: 0.5rem;
+                margin-top: 0.75rem;
+                padding-right: 0.25rem;
             }
             details {
                 margin-left: 1rem;
             }
-            /* Remove default margin for root elements to align left */
             #tree-container > details,
             #tree-container > .file-item {
                 margin-left: 0;
@@ -273,11 +264,12 @@
             summary {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
-                padding: 0.25rem 0.5rem;
+                gap: 0.4rem;
+                padding: 0.2rem 0.4rem;
                 border-radius: 4px;
                 cursor: pointer;
-                list-style: none; /* Hide default arrow */
+                list-style: none;
+                font-size: 0.8125rem;
             }
             summary::-webkit-details-marker {
                 display: none;
@@ -290,23 +282,22 @@
             .file-item {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
-                padding: 0.25rem 0.5rem 0.25rem 2.5rem;
+                gap: 0.4rem;
+                padding: 0.2rem 0.4rem 0.2rem 2.25rem;
                 border-radius: 4px;
                 cursor: pointer;
-                position: relative;
+                font-size: 0.8125rem;
             }
             #tree-container > .file-item {
-                padding-left: 2rem;
-            } /* Root file padding */
+                padding-left: 1.75rem;
+            }
 
-            /* Hover Actions */
             .actions {
                 margin-left: auto;
                 display: flex;
-                gap: 0.25rem;
+                gap: 0.125rem;
                 opacity: 0;
-                transition: opacity 0.2s;
+                transition: opacity 0.15s;
             }
             summary:hover .actions,
             .file-item:hover .actions {
@@ -315,13 +306,13 @@
             .action-btn {
                 background: none;
                 border: none;
-                padding: 4px;
+                padding: 3px;
                 color: var(--text-muted);
                 border-radius: 4px;
                 cursor: pointer;
             }
             .action-btn:hover {
-                background: rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.08);
                 color: var(--text-main);
             }
             .action-btn.danger:hover {
@@ -329,40 +320,37 @@
             }
 
             .icon-sm {
-                width: 16px;
-                height: 16px;
+                width: 15px;
+                height: 15px;
                 flex-shrink: 0;
             }
             .chevron {
-                transition: transform 0.2s;
+                transition: transform 0.15s;
                 color: var(--text-muted);
             }
             details[open] > summary > .chevron {
                 transform: rotate(90deg);
             }
-
             .name-label {
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
 
-            /* Stats & Token Bar */
+            /* Stats card */
             .card {
                 background: rgba(0, 0, 0, 0.2);
                 border: 1px solid var(--border);
-                border-radius: var(--radius-md);
-                padding: 1rem;
-                margin-bottom: 1rem;
-                display: flex;
-                flex-direction: column;
-                gap: 0.75rem;
+                border-radius: var(--radius);
+                padding: 0.875rem;
+                margin-bottom: 0.875rem;
             }
             .progress-bg {
-                background: rgba(255, 255, 255, 0.1);
-                height: 6px;
+                background: rgba(255, 255, 255, 0.08);
+                height: 5px;
                 border-radius: 3px;
                 overflow: hidden;
+                margin-top: 0.625rem;
             }
             .progress-fill {
                 height: 100%;
@@ -373,32 +361,33 @@
                 width: 0%;
             }
 
-            /* Output Formats */
+            /* Format tabs */
             .format-tabs {
                 display: flex;
-                gap: 0.25rem;
+                gap: 2px;
                 background: rgba(0, 0, 0, 0.3);
-                padding: 0.25rem;
-                border-radius: var(--radius-md);
+                padding: 3px;
+                border-radius: var(--radius);
                 border: 1px solid var(--border);
             }
             .tab-btn {
                 background: transparent;
                 border: none;
-                padding: 0.25rem 0.75rem;
-                border-radius: 4px;
+                padding: 0.2rem 0.625rem;
+                border-radius: 5px;
                 font-weight: 500;
+                font-size: 0.75rem;
             }
             .tab-btn.active {
                 background: var(--accent);
                 color: white;
             }
 
-            /* Textareas Layout */
+            /* Right layout */
             .right-layout {
                 display: flex;
                 flex-direction: column;
-                gap: 1rem;
+                gap: 0.875rem;
                 flex: 1;
                 min-height: 0;
             }
@@ -416,27 +405,149 @@
                 min-height: 0;
             }
 
-            /* Utility Classes */
-            .text-blue {
-                color: var(--file-color);
+            /* Custom ignore panel */
+            .ignore-panel {
+                background: rgba(0, 0, 0, 0.2);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 0.625rem;
+                margin-top: 0.5rem;
             }
-            .text-yellow {
-                color: var(--folder-color);
+            .ignore-panel input[type="text"] {
+                width: 100%;
+                padding: 0.4rem 0.6rem;
+                font-size: 0.75rem;
+                margin-top: 0.375rem;
             }
-            .text-green {
-                color: var(--success);
+            .ignore-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.25rem;
+                background: rgba(239, 68, 68, 0.1);
+                border: 1px solid rgba(239, 68, 68, 0.2);
+                color: #fca5a5;
+                border-radius: 4px;
+                padding: 0.125rem 0.375rem;
+                font-size: 0.6875rem;
+                font-family: var(--font-mono);
+                margin: 0.25rem 0.125rem 0 0;
+            }
+            .ignore-tag button {
+                background: none;
+                border: none;
+                padding: 0;
+                color: inherit;
+                cursor: pointer;
+                font-size: 0.875rem;
+                line-height: 1;
+                opacity: 0.6;
+            }
+            .ignore-tag button:hover {
+                opacity: 1;
+            }
+
+            /* Toast */
+            .toast {
+                position: fixed;
+                bottom: 1.5rem;
+                right: 1.5rem;
+                background: rgba(16, 18, 24, 0.95);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 0.625rem 1rem;
+                font-size: 0.8125rem;
+                color: var(--text-main);
+                backdrop-filter: blur(8px);
+                z-index: 100;
+                animation:
+                    toast-in 0.2s ease,
+                    toast-out 0.2s ease 1.8s forwards;
+                pointer-events: none;
+            }
+            @keyframes toast-in {
+                from {
+                    opacity: 0;
+                    transform: translateY(8px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @keyframes toast-out {
+                from {
+                    opacity: 1;
+                }
+                to {
+                    opacity: 0;
+                }
+            }
+
+            /* Undo bar */
+            #undo-bar {
+                position: fixed;
+                bottom: 1.5rem;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(16, 18, 24, 0.95);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 0.5rem 0.75rem;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-size: 0.8125rem;
+                backdrop-filter: blur(8px);
+                z-index: 100;
+                animation: toast-in 0.15s ease;
+            }
+            #undo-bar button {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.625rem;
+            }
+
+            /* Header row */
+            .header-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 0.875rem;
+            }
+            .header-title {
+                font-size: 0.8125rem;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .toolbar {
+                display: flex;
+                align-items: center;
+                gap: 0.375rem;
+            }
+            .toolbar-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 0.5rem;
+                padding: 0 0.25rem;
+            }
+
+            /* Selection helpers */
+            textarea {
+                user-select: text;
+            }
+            input[type="text"] {
+                user-select: text;
             }
         </style>
     </head>
     <body>
         <div id="app">
-            <!-- LEFT PANEL: File Selection & Tree -->
+            <!-- LEFT PANEL -->
             <div id="left-panel" class="panel">
-                <div
-                    class="flex items-center justify-between"
-                    style="margin-bottom: 1rem"
-                >
-                    <h2 class="text-sm font-mono flex items-center gap-2">
+                <div class="header-row">
+                    <div class="header-title mono">
                         <svg
                             class="icon-sm"
                             viewBox="0 0 24 24"
@@ -449,17 +560,16 @@
                             />
                         </svg>
                         AI Context Studio
-                    </h2>
+                    </div>
                     <button
                         id="btn-reset"
                         class="hidden text-xs"
                         title="Reset All"
                     >
-                        Clear Workspace
+                        Clear
                     </button>
                 </div>
 
-                <!-- Uploader Zone -->
                 <div id="drop-zone">
                     <svg
                         viewBox="0 0 24 24"
@@ -472,9 +582,7 @@
                         />
                     </svg>
                     <h3>Drop project folder</h3>
-                    <p class="text-sm text-muted" style="margin-bottom: 1rem">
-                        or click to browse
-                    </p>
+                    <p class="text-sm muted">or click to browse</p>
                     <input
                         type="file"
                         id="file-input"
@@ -485,30 +593,38 @@
                     />
                 </div>
 
-                <!-- Work Area -->
                 <div
                     id="work-area"
-                    class="hidden flex-col"
-                    style="flex: 1; overflow: hidden"
+                    class="hidden"
+                    style="
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        overflow: hidden;
+                    "
                 >
                     <div
-                        class="flex gap-2 items-center"
-                        style="margin-bottom: 0.5rem"
+                        style="
+                            display: flex;
+                            gap: 0.4rem;
+                            margin-bottom: 0.4rem;
+                        "
                     >
                         <input
                             type="text"
                             id="search-input"
-                            placeholder="Search files..."
-                            style="flex: 1; padding: 0.5rem"
+                            placeholder="Search files…"
+                            style="flex: 1; padding: 0.4rem 0.6rem"
                         />
                     </div>
-                    <div
-                        class="flex justify-between items-center text-xs text-muted"
-                        style="margin-bottom: 0.5rem; padding: 0 0.5rem"
-                    >
+                    <div class="toolbar-row text-xs muted">
                         <label
-                            class="flex items-center gap-2"
-                            style="cursor: pointer"
+                            style="
+                                display: flex;
+                                align-items: center;
+                                gap: 0.4rem;
+                                cursor: pointer;
+                            "
                         >
                             <input
                                 type="checkbox"
@@ -517,7 +633,7 @@
                             />
                             Apply .gitignore
                         </label>
-                        <div class="flex gap-2">
+                        <div class="toolbar">
                             <button id="btn-expand" class="action-btn text-xs">
                                 Expand
                             </button>
@@ -530,15 +646,42 @@
                         </div>
                     </div>
 
+                    <!-- Custom ignore patterns -->
+                    <div class="ignore-panel">
+                        <div
+                            style="
+                                display: flex;
+                                align-items: center;
+                                justify-content: space-between;
+                            "
+                        >
+                            <span class="text-xs muted"
+                                >Custom ignore patterns</span
+                            >
+                        </div>
+                        <div id="ignore-tags"></div>
+                        <input
+                            type="text"
+                            id="ignore-input"
+                            placeholder="e.g. *.test.ts, *.spec.js — press Enter"
+                        />
+                    </div>
+
                     <div id="tree-container"></div>
                 </div>
             </div>
 
-            <!-- RIGHT PANEL: Preview, State & Export -->
+            <!-- RIGHT PANEL -->
             <div id="right-panel" class="panel hidden">
-                <!-- Stats & Tokens -->
                 <div class="card">
-                    <div class="flex justify-between text-sm font-mono">
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            font-size: 0.8125rem;
+                        "
+                        class="mono"
+                    >
                         <span
                             >Selected:
                             <strong id="stat-files" class="text-green"
@@ -547,8 +690,8 @@
                             files</span
                         >
                         <span
-                            >Est. Tokens: <strong id="stat-tokens">0</strong>
-                            <span class="text-muted">/ 1M</span></span
+                            >Tokens: <strong id="stat-tokens">0</strong>
+                            <span class="muted">/ 1M</span></span
                         >
                     </div>
                     <div class="progress-bg">
@@ -556,10 +699,13 @@
                     </div>
                 </div>
 
-                <!-- Export Bar -->
                 <div
-                    class="flex items-center justify-between"
-                    style="margin-bottom: 1rem"
+                    style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        margin-bottom: 0.875rem;
+                    "
                 >
                     <div class="format-tabs">
                         <button class="tab-btn active" data-format="txt">
@@ -568,7 +714,7 @@
                         <button class="tab-btn" data-format="md">MD</button>
                         <button class="tab-btn" data-format="xml">XML</button>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="toolbar">
                         <button id="btn-copy-export" class="primary">
                             <svg
                                 class="icon-sm"
@@ -608,19 +754,28 @@
                     </div>
                 </div>
 
-                <!-- Vertical Layout Grid for FS & State -->
                 <div class="right-layout">
-                    <!-- File Structure Preview -->
                     <div class="box-container">
                         <div
-                            class="flex items-center justify-between"
-                            style="margin-bottom: 0.5rem"
+                            style="
+                                display: flex;
+                                align-items: center;
+                                justify-content: space-between;
+                                margin-bottom: 0.4rem;
+                            "
                         >
-                            <h3 class="text-sm">File Structure (FS)</h3>
-                            <div class="flex items-center gap-2">
+                            <h3 class="text-sm" style="font-weight: 600">
+                                File Structure
+                            </h3>
+                            <div class="toolbar">
                                 <label
-                                    class="text-xs text-muted flex items-center gap-1"
-                                    style="cursor: pointer"
+                                    class="text-xs muted"
+                                    style="
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 0.35rem;
+                                        cursor: pointer;
+                                    "
                                 >
                                     <input
                                         type="checkbox"
@@ -660,214 +815,314 @@
                             id="fs-preview"
                             class="code-box"
                             readonly
-                            placeholder="Structure will appear here..."
+                            placeholder="Structure will appear here…"
                         ></textarea>
                     </div>
 
-                    <!-- Selection State -->
                     <div class="box-container">
                         <div
-                            class="flex items-center justify-between"
-                            style="margin-bottom: 0.5rem"
+                            style="
+                                display: flex;
+                                align-items: center;
+                                justify-content: space-between;
+                                margin-bottom: 0.4rem;
+                            "
                         >
-                            <h3 class="text-sm flex items-center gap-2">
+                            <h3 class="text-sm" style="font-weight: 600">
                                 Selection State
                             </h3>
-                            <span class="text-xs text-muted"
+                            <span class="text-xs muted"
                                 >Edit & blur to apply</span
                             >
                         </div>
                         <textarea
                             id="state-input"
                             class="code-box"
-                            placeholder="Paste state here...&#10;&#10;+ src/&#10;- src/ignore.ts"
+                            placeholder="Paste state here…&#10;&#10;+ src/&#10;- src/ignore.ts"
                         ></textarea>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- SVGs Templates -->
-        <template id="icon-chevron"
-            ><svg
-                class="icon-sm chevron"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <path d="M9 18l6-6-6-6" /></svg
-        ></template>
-        <template id="icon-folder"
-            ><svg
-                class="icon-sm text-yellow"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <path
-                    d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                /></svg
-        ></template>
-        <template id="icon-file"
-            ><svg
-                class="icon-sm text-blue"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <path
-                    d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"
-                ></path>
-                <polyline points="13 2 13 9 20 9"></polyline></svg
-        ></template>
-        <template id="icon-copy"
-            ><svg
-                class="icon-sm"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path
-                    d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-                ></path></svg
-        ></template>
-        <template id="icon-eye-off"
-            ><svg
-                class="icon-sm"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <path
-                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
-                ></path>
-                <line x1="1" y1="1" x2="23" y2="23"></line></svg
-        ></template>
-
         <script>
-            /**
-             * CORE STATE & CONFIG
-             */
-            const TOKEN_LIMIT = 1000000;
+            // ─── SVG icon strings ───────────────────────────────────────────────
+            const ICONS = {
+                chevron:
+                    '<svg class="icon-sm chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>',
+                folder: '<svg class="icon-sm text-yellow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+                file: '<svg class="icon-sm text-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>',
+                copy: '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
+                eyeOff: '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>',
+                download:
+                    '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+            };
+
+            // ─── Config ─────────────────────────────────────────────────────────
+            const TOKEN_LIMIT = 1_000_000;
             const BINARY_EXTS = new Set([
                 "png",
                 "jpg",
                 "jpeg",
                 "gif",
                 "ico",
-                "svg",
                 "webp",
+                "bmp",
+                "tiff",
                 "mp4",
                 "mp3",
                 "wav",
+                "ogg",
+                "avi",
+                "mov",
+                "webm",
                 "pdf",
                 "zip",
                 "tar",
                 "gz",
+                "7z",
+                "rar",
+                "bz2",
                 "exe",
                 "dll",
                 "pyc",
                 "class",
                 "jar",
+                "so",
+                "dylib",
                 "woff",
                 "woff2",
                 "ttf",
                 "eot",
+                "otf",
                 "bin",
                 "iso",
+                "img",
+                "lock",
             ]);
-            const IGNORED_DIRS_DEFAULT = [
+            // SVG is intentionally NOT in binary list — it's text-based
+            const ALWAYS_IGNORED_DIRS = new Set([
                 ".git",
                 "node_modules",
                 ".next",
                 "dist",
                 "build",
                 "coverage",
-            ];
+                "__pycache__",
+                ".venv",
+                "venv",
+            ]);
 
-            let appState = {
+            // ─── State ──────────────────────────────────────────────────────────
+            const state = {
                 files: [],
-                gitignoreRules: [],
+                gitignoreMatchers: [],
+                customIgnorePatterns: [],
                 useGitignore: true,
                 searchQuery: "",
                 format: "txt",
                 fsSelectedOnly: true,
-                expandedPaths: new Set(), // Tracks open folders
+                expandedPaths: new Set(),
+                undoStack: [], // { description, snapshot }
             };
 
-            /**
-             * UTILS
-             */
+            // ─── Helpers ────────────────────────────────────────────────────────
             const $ = (id) => document.getElementById(id);
-            const getTemplate = (id) => document.getElementById(id).innerHTML;
-            const estimateTokens = (size) => Math.ceil(size / 4);
+            const estimateTokens = (bytes) => Math.ceil(bytes / 3.5); // slightly more accurate than /4
 
-            function parseGitignore(content) {
-                const lines = content
-                    .split("\n")
-                    .map((l) => l.trim())
-                    .filter((l) => l && !l.startsWith("#"));
-                return (path) => {
-                    return lines.some((pattern) => {
-                        const cleanPattern = pattern
-                            .replace(/^\//, "")
-                            .replace(/\/$/, "");
-                        if (cleanPattern.includes("*")) {
-                            const regex = new RegExp(
-                                "^.*" +
-                                    cleanPattern.replace(/\*/g, ".*") +
-                                    ".*$",
-                            );
-                            return regex.test(path);
-                        }
-                        return (
-                            path.includes(cleanPattern + "/") ||
-                            path.endsWith(cleanPattern) ||
-                            path === cleanPattern
-                        );
-                    });
-                };
+            function toast(msg) {
+                const el = document.createElement("div");
+                el.className = "toast";
+                el.textContent = msg;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 2200);
             }
 
-            function showFeedback(btn, text, originalText, originalIcon = "") {
+            function flashBtn(btn, text, duration = 1800) {
+                const original = btn.innerHTML;
                 btn.innerHTML = text;
-                setTimeout(
-                    () => (btn.innerHTML = originalIcon + originalText),
-                    2000,
-                );
+                setTimeout(() => (btn.innerHTML = original), duration);
             }
 
-            // Stop events from triggering parent summary toggle
-            function stopPropagation(e) {
-                e.preventDefault();
-                e.stopPropagation();
+            // ─── Gitignore Parser (supports **, !, ?, negation) ─────────────────
+            function parseGitignore(content, basePath) {
+                const rules = [];
+                for (const raw of content.split("\n")) {
+                    const trimmed = raw.trim();
+                    if (!trimmed || trimmed.startsWith("#")) continue;
+
+                    let pattern = trimmed;
+                    let negate = false;
+
+                    if (pattern.startsWith("!")) {
+                        negate = true;
+                        pattern = pattern.slice(1);
+                    }
+
+                    // Remove leading slash (anchors to base)
+                    const anchored = pattern.startsWith("/");
+                    pattern = pattern.replace(/^\//, "");
+
+                    // Remove trailing slash (directory marker only — we match both ways)
+                    pattern = pattern.replace(/\/$/, "");
+
+                    const regex = gitignorePatternToRegex(pattern, anchored);
+                    rules.push({ regex, negate, anchored, basePath });
+                }
+                return rules;
             }
 
-            /**
-             * FILE SYSTEM PARSING
-             */
+            function gitignorePatternToRegex(pattern, anchored) {
+                // Convert gitignore glob to regex
+                let re = "";
+                let i = 0;
+                while (i < pattern.length) {
+                    const c = pattern[i];
+                    if (c === "*") {
+                        if (pattern[i + 1] === "*") {
+                            if (pattern[i + 2] === "/") {
+                                re += "(?:.+/)?"; // **/ = zero or more dirs
+                                i += 3;
+                                continue;
+                            }
+                            re += ".*"; // ** at end = match everything
+                            i += 2;
+                            continue;
+                        }
+                        re += "[^/]*"; // * = anything except /
+                    } else if (c === "?") {
+                        re += "[^/]";
+                    } else if (c === ".") {
+                        re += "\\.";
+                    } else if (c === "[") {
+                        // Pass through character classes
+                        const close = pattern.indexOf("]", i);
+                        if (close > -1) {
+                            re += pattern.slice(i, close + 1);
+                            i = close + 1;
+                            continue;
+                        }
+                        re += "\\[";
+                    } else {
+                        re += c;
+                    }
+                    i++;
+                }
+
+                if (anchored) {
+                    return new RegExp("^" + re + "(?:/.*)?$");
+                }
+                // Unanchored: can match at any depth
+                return new RegExp("(?:^|/)" + re + "(?:/.*)?$");
+            }
+
+            function isGitignored(filePath, matchers) {
+                let ignored = false;
+                for (const rule of matchers) {
+                    // Make path relative to gitignore base
+                    let relPath = filePath;
+                    if (rule.basePath && filePath.startsWith(rule.basePath)) {
+                        relPath = filePath.slice(rule.basePath.length);
+                    }
+                    if (rule.regex.test(relPath)) {
+                        ignored = !rule.negate;
+                    }
+                }
+                return ignored;
+            }
+
+            // ─── Custom ignore pattern matching (simple glob) ───────────────────
+            function matchesCustomIgnore(filePath, patterns) {
+                const fileName = filePath.split("/").pop();
+                return patterns.some((pattern) => {
+                    if (pattern.includes("/")) {
+                        // Path pattern
+                        const regex = gitignorePatternToRegex(pattern, false);
+                        return regex.test(filePath);
+                    }
+                    // Filename-only pattern
+                    const regex = gitignorePatternToRegex(pattern, false);
+                    return regex.test(fileName);
+                });
+            }
+
+            // ─── Undo System ────────────────────────────────────────────────────
+            function snapshotState() {
+                return state.files.map((f) => ({
+                    path: f.path,
+                    isSelected: f.isSelected,
+                    isExcluded: f.isExcluded,
+                }));
+            }
+
+            function pushUndo(description) {
+                state.undoStack.push({
+                    description,
+                    snapshot: snapshotState(),
+                });
+                if (state.undoStack.length > 30) state.undoStack.shift();
+                showUndoBar(description);
+            }
+
+            function popUndo() {
+                const entry = state.undoStack.pop();
+                if (!entry) return;
+                for (const snap of entry.snapshot) {
+                    const f = state.files.find((x) => x.path === snap.path);
+                    if (f) {
+                        f.isSelected = snap.isSelected;
+                        f.isExcluded = snap.isExcluded;
+                    }
+                }
+                renderApp();
+                hideUndoBar();
+                toast("Undone: " + entry.description);
+            }
+
+            function showUndoBar(description) {
+                hideUndoBar();
+                const bar = document.createElement("div");
+                bar.id = "undo-bar";
+                bar.innerHTML = `<span class="muted text-sm">${description}</span>`;
+                const btn = document.createElement("button");
+                btn.textContent = "Undo";
+                btn.className = "primary";
+                btn.onclick = popUndo;
+                bar.appendChild(btn);
+                document.body.appendChild(bar);
+                // Auto-hide after 5s
+                bar._timer = setTimeout(hideUndoBar, 5000);
+            }
+
+            function hideUndoBar() {
+                const bar = $("undo-bar");
+                if (bar) {
+                    clearTimeout(bar._timer);
+                    bar.remove();
+                }
+            }
+
+            // ─── File System Processing ─────────────────────────────────────────
             async function processFileSystem(items) {
-                appState.files = [];
-                appState.gitignoreRules = [];
-                appState.expandedPaths.clear();
+                state.files = [];
+                state.gitignoreMatchers = [];
+                state.expandedPaths.clear();
+                state.undoStack = [];
 
                 const entries = [];
 
                 if (items instanceof FileList) {
-                    for (let file of items) {
-                        const path = file.webkitRelativePath || file.name;
-                        entries.push({ file, path, name: file.name });
+                    for (const file of items) {
+                        entries.push({
+                            file,
+                            path: file.webkitRelativePath || file.name,
+                            name: file.name,
+                        });
                     }
                 } else {
-                    const processEntry = async (entry, path = "") => {
+                    const walk = async (entry, prefix = "") => {
                         if (!entry) return;
-                        const fullPath = path + entry.name;
+                        const fullPath = prefix + entry.name;
                         if (entry.isFile) {
                             const file = await new Promise((res) =>
                                 entry.file(res),
@@ -879,505 +1134,426 @@
                             });
                         } else if (entry.isDirectory) {
                             const reader = entry.createReader();
-                            const readAll = async () => {
-                                let results = [];
-                                let read;
-                                do {
-                                    read = await new Promise((res) =>
-                                        reader.readEntries(res),
-                                    );
-                                    results.push(...read);
-                                } while (read.length > 0);
-                                return results;
-                            };
-                            const children = await readAll();
-                            for (const child of children)
-                                await processEntry(child, fullPath + "/");
+                            let all = [],
+                                batch;
+                            do {
+                                batch = await new Promise((res) =>
+                                    reader.readEntries(res),
+                                );
+                                all.push(...batch);
+                            } while (batch.length > 0);
+                            await Promise.all(
+                                all.map((child) => walk(child, fullPath + "/")),
+                            );
                         }
                     };
-
-                    const promises = Array.from(items)
+                    const roots = Array.from(items)
                         .filter((i) => i.kind === "file")
-                        .map((i) => processEntry(i.webkitGetAsEntry()));
-                    await Promise.all(promises);
+                        .map((i) => i.webkitGetAsEntry());
+                    await Promise.all(roots.map((e) => walk(e)));
                 }
 
+                // First pass: collect .gitignore files
+                const gitignoreEntries = entries.filter(
+                    (e) => e.name === ".gitignore",
+                );
+                for (const gi of gitignoreEntries) {
+                    try {
+                        const content = await gi.file.text();
+                        const basePath = gi.path.replace(".gitignore", "");
+                        const rules = parseGitignore(content, basePath);
+                        state.gitignoreMatchers.push(...rules);
+                    } catch (_) {
+                        /* skip unreadable */
+                    }
+                }
+
+                // Second pass: build file list
                 for (const item of entries) {
                     const ext = item.name.split(".").pop().toLowerCase();
                     if (BINARY_EXTS.has(ext)) continue;
 
-                    let isGitignored = IGNORED_DIRS_DEFAULT.some((d) =>
-                        item.path.includes(d + "/"),
-                    );
+                    const inAlwaysIgnored = item.path
+                        .split("/")
+                        .some((part) => ALWAYS_IGNORED_DIRS.has(part));
+                    const gitIgnored =
+                        state.gitignoreMatchers.length > 0 &&
+                        isGitignored(item.path, state.gitignoreMatchers);
+                    const isIgnored = inAlwaysIgnored || gitIgnored;
 
-                    if (item.name === ".gitignore") {
-                        const content = await item.file.text();
-                        appState.gitignoreRules.push(parseGitignore(content));
-                    }
-
-                    appState.files.push({
+                    state.files.push({
                         path: item.path,
                         name: item.name,
                         size: item.file.size,
                         fileRef: item.file,
-                        isSelected: !isGitignored,
+                        isSelected: !isIgnored,
                         isExcluded: false,
-                        isGitignored: isGitignored,
+                        isGitignored: isIgnored,
                     });
                 }
 
-                applyGitignoreToState();
                 renderApp();
             }
 
-            function applyGitignoreToState() {
-                appState.files.forEach((f) => {
-                    if (!f.isGitignored && appState.gitignoreRules.length > 0) {
-                        const ignored = appState.gitignoreRules.some((rule) =>
-                            rule(f.path),
-                        );
-                        if (ignored) f.isGitignored = true;
-                    }
-
-                    if (appState.useGitignore && f.isGitignored) {
-                        f.isSelected = false;
-                    } else if (
-                        !appState.useGitignore &&
-                        f.isGitignored &&
-                        !f.isExcluded
-                    ) {
-                        f.isSelected = true;
-                    }
-                });
-            }
-
-            /**
-             * TREE RENDERING
-             */
-            function renderApp() {
-                buildTreeUI();
-                updateDerivedState();
-            }
-
-            function updateDerivedState() {
-                updateStats();
-                generateFS();
-                generateStateText();
-            }
-
+            // ─── Visibility ─────────────────────────────────────────────────────
             function getVisibleFiles() {
-                return appState.files.filter((f) => {
+                return state.files.filter((f) => {
                     if (f.isExcluded) return false;
-                    if (appState.useGitignore && f.isGitignored) return false;
+                    if (state.useGitignore && f.isGitignored) return false;
+                    if (matchesCustomIgnore(f.path, state.customIgnorePatterns))
+                        return false;
                     if (
-                        appState.searchQuery &&
-                        !f.path.toLowerCase().includes(appState.searchQuery)
+                        state.searchQuery &&
+                        !f.path.toLowerCase().includes(state.searchQuery)
                     )
                         return false;
                     return true;
                 });
             }
 
-            function buildTreeUI() {
+            // ─── Tree Rendering ─────────────────────────────────────────────────
+            function renderApp() {
+                buildTree();
+                updateStats();
+                generateFS();
+                generateStateText();
+            }
+
+            function buildTree() {
                 const container = $("tree-container");
                 container.innerHTML = "";
 
-                const visibleFiles = getVisibleFiles();
-                if (visibleFiles.length === 0) {
+                const visible = getVisibleFiles();
+                if (visible.length === 0) {
                     container.innerHTML =
-                        '<div class="text-sm text-muted text-center mt-4">No files found.</div>';
+                        '<div class="text-sm muted" style="text-align:center;margin-top:2rem;">No files found.</div>';
                     return;
                 }
 
+                // Build nested map
                 const root = {};
-                visibleFiles.forEach((f) => {
+                for (const f of visible) {
                     const parts = f.path.split("/");
-                    let current = root;
-                    parts.forEach((part, i) => {
-                        const isLast = i === parts.length - 1;
-                        if (!current[part]) {
-                            current[part] = isLast ? f : {};
-                        }
-                        if (!isLast) current = current[part];
-                    });
-                });
-
-                let isFirstRender =
-                    appState.expandedPaths.size === 0 &&
-                    appState.searchQuery === "";
-
-                function createDOMNode(obj, pathPrefix = "", depth = 0) {
-                    const keys = Object.keys(obj).sort((a, b) => {
-                        const isDirA = !obj[a].fileRef;
-                        const isDirB = !obj[b].fileRef;
-                        if (isDirA === isDirB) return a.localeCompare(b);
-                        return isDirA ? -1 : 1;
-                    });
-
-                    const fragment = document.createDocumentFragment();
-
-                    keys.forEach((key) => {
-                        const item = obj[key];
-                        const currentPath = pathPrefix
-                            ? `${pathPrefix}/${key}`
-                            : key;
-                        const isDir = !item.fileRef;
-
-                        if (isDir) {
-                            const details = document.createElement("details");
-
-                            // Expand logic:
-                            // 1. Search active -> Expand all
-                            // 2. Initial load -> Expand layer 1 (depth 0)
-                            // 3. User previously expanded it -> Expand
-                            const isSearching = appState.searchQuery.length > 0;
-                            const isRootLayerOnFirstLoad =
-                                isFirstRender && depth === 0;
-                            const isPreviouslyExpanded =
-                                appState.expandedPaths.has(currentPath);
-
-                            if (
-                                isSearching ||
-                                isRootLayerOnFirstLoad ||
-                                isPreviouslyExpanded
-                            ) {
-                                details.open = true;
-                                if (isRootLayerOnFirstLoad)
-                                    appState.expandedPaths.add(currentPath);
-                            }
-
-                            details.addEventListener("toggle", (e) => {
-                                if (e.target.open)
-                                    appState.expandedPaths.add(currentPath);
-                                else appState.expandedPaths.delete(currentPath);
-                            });
-
-                            const summary = document.createElement("summary");
-
-                            const folderFiles = appState.files.filter(
-                                (f) =>
-                                    f.path.startsWith(currentPath + "/") &&
-                                    !f.isExcluded &&
-                                    (!appState.useGitignore || !f.isGitignored),
-                            );
-                            const selectedCount = folderFiles.filter(
-                                (f) => f.isSelected,
-                            ).length;
-                            const isAllSelected =
-                                selectedCount === folderFiles.length &&
-                                folderFiles.length > 0;
-
-                            const cb = document.createElement("input");
-                            cb.type = "checkbox";
-                            if (selectedCount > 0) {
-                                cb.checked = isAllSelected;
-                                cb.indeterminate =
-                                    selectedCount < folderFiles.length;
-                            } else {
-                                cb.checked = false;
-                            }
-
-                            // CRITICAL FIX: Prevent summary toggle on checkbox click
-                            cb.onclick = (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                folderFiles.forEach(
-                                    (f) => (f.isSelected = !isAllSelected),
-                                );
-                                renderApp();
-                            };
-
-                            const actions = document.createElement("div");
-                            actions.className = "actions";
-
-                            const btnExclude = document.createElement("button");
-                            btnExclude.className = "action-btn danger";
-                            btnExclude.title = "Exclude Folder";
-                            btnExclude.innerHTML = getTemplate("icon-eye-off");
-                            btnExclude.onclick = (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                excludePath(currentPath + "/");
-                            };
-
-                            actions.appendChild(btnExclude);
-
-                            summary.innerHTML = `${getTemplate("icon-chevron")} `;
-                            summary.appendChild(cb);
-                            summary.insertAdjacentHTML(
-                                "beforeend",
-                                ` ${getTemplate("icon-folder")} <span class="name-label font-mono text-sm">${key}</span>`,
-                            );
-                            summary.appendChild(actions);
-
-                            details.appendChild(summary);
-                            details.appendChild(
-                                createDOMNode(item, currentPath, depth + 1),
-                            );
-                            fragment.appendChild(details);
+                    let node = root;
+                    for (let i = 0; i < parts.length; i++) {
+                        const key = parts[i];
+                        if (i === parts.length - 1) {
+                            node[key] = f; // leaf
                         } else {
-                            const div = document.createElement("div");
-                            div.className = "file-item";
-
-                            const cb = document.createElement("input");
-                            cb.type = "checkbox";
-                            cb.checked = item.isSelected;
-
-                            cb.onclick = (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                item.isSelected = !item.isSelected;
-                                renderApp();
-                            };
-
-                            const actions = document.createElement("div");
-                            actions.className = "actions";
-
-                            const btnCopy = document.createElement("button");
-                            btnCopy.className = "action-btn";
-                            btnCopy.title = "Copy Content";
-                            btnCopy.innerHTML = getTemplate("icon-copy");
-                            btnCopy.onclick = (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                copyFileContent(btnCopy, item.path);
-                            };
-
-                            const btnExclude = document.createElement("button");
-                            btnExclude.className = "action-btn danger";
-                            btnExclude.title = "Exclude File";
-                            btnExclude.innerHTML = getTemplate("icon-eye-off");
-                            btnExclude.onclick = (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                excludePath(item.path);
-                            };
-
-                            actions.appendChild(btnCopy);
-                            actions.appendChild(btnExclude);
-
-                            div.innerHTML = "";
-                            div.appendChild(cb);
-                            div.insertAdjacentHTML(
-                                "beforeend",
-                                ` ${getTemplate("icon-file")} <span class="name-label font-mono text-sm">${key}</span>`,
-                            );
-                            div.appendChild(actions);
-
-                            div.onclick = (e) => {
-                                if (
-                                    e.target.tagName === "INPUT" ||
-                                    e.target.tagName === "BUTTON" ||
-                                    e.target.closest("button")
-                                )
-                                    return;
-                                item.isSelected = !item.isSelected;
-                                renderApp();
-                            };
-
-                            fragment.appendChild(div);
-                        }
-                    });
-                    return fragment;
-                }
-
-                container.appendChild(createDOMNode(root));
-            }
-
-            // Fast DOM checkbox sync (avoids rebuilding the whole tree)
-            function syncDOMCheckboxes() {
-                const container = $("tree-container");
-
-                // 1. Sync file checkboxes
-                container
-                    .querySelectorAll(".file-item > input")
-                    .forEach((cb) => {
-                        const file = appState.files.find(
-                            (f) => f.path === cb.dataset.path,
-                        );
-                        if (file) cb.checked = file.isSelected;
-                    });
-
-                // 2. Sync folder checkboxes from bottom up
-                const detailsElements = Array.from(
-                    container.querySelectorAll("details"),
-                ).reverse();
-                detailsElements.forEach((details) => {
-                    const summaryCb = details.querySelector(
-                        'summary > input[type="checkbox"]',
-                    );
-                    if (summaryCb) {
-                        const childCbs = Array.from(
-                            details.querySelectorAll(
-                                ":scope > details > summary > input, :scope > .file-item > input",
-                            ),
-                        );
-                        const checkedCount = childCbs.filter(
-                            (c) => c.checked,
-                        ).length;
-                        const indetCount = childCbs.filter(
-                            (c) => c.indeterminate,
-                        ).length;
-
-                        if (checkedCount === 0 && indetCount === 0) {
-                            summaryCb.checked = false;
-                            summaryCb.indeterminate = false;
-                        } else if (
-                            checkedCount === childCbs.length &&
-                            indetCount === 0
-                        ) {
-                            summaryCb.checked = true;
-                            summaryCb.indeterminate = false;
-                        } else {
-                            summaryCb.checked = false;
-                            summaryCb.indeterminate = true;
+                            if (!node[key] || node[key].fileRef) node[key] = {};
+                            node = node[key];
                         }
                     }
-                });
+                }
+
+                const isFirstRender =
+                    state.expandedPaths.size === 0 && !state.searchQuery;
+                const isSearching = state.searchQuery.length > 0;
+
+                container.appendChild(
+                    buildNodes(root, "", 0, isFirstRender, isSearching),
+                );
             }
 
-            /**
-             * ACTIONS
-             */
-            function excludePath(path) {
-                appState.files.forEach((f) => {
+            function buildNodes(
+                obj,
+                prefix,
+                depth,
+                isFirstRender,
+                isSearching,
+            ) {
+                const frag = document.createDocumentFragment();
+                const keys = Object.keys(obj).sort((a, b) => {
+                    const da = !obj[a].fileRef,
+                        db = !obj[b].fileRef;
+                    return da === db ? a.localeCompare(b) : da ? -1 : 1;
+                });
+
+                for (const key of keys) {
+                    const item = obj[key];
+                    const path = prefix ? `${prefix}/${key}` : key;
+                    const isDir = !item.fileRef;
+
+                    if (isDir) {
+                        frag.appendChild(
+                            buildFolder(
+                                key,
+                                path,
+                                item,
+                                depth,
+                                isFirstRender,
+                                isSearching,
+                            ),
+                        );
+                    } else {
+                        frag.appendChild(buildFile(key, item));
+                    }
+                }
+                return frag;
+            }
+
+            function buildFolder(
+                name,
+                path,
+                children,
+                depth,
+                isFirstRender,
+                isSearching,
+            ) {
+                const details = document.createElement("details");
+
+                const shouldOpen =
+                    isSearching ||
+                    (isFirstRender && depth === 0) ||
+                    state.expandedPaths.has(path);
+
+                if (shouldOpen) {
+                    details.open = true;
+                    state.expandedPaths.add(path);
+                }
+
+                details.addEventListener("toggle", () => {
+                    if (details.open) state.expandedPaths.add(path);
+                    else state.expandedPaths.delete(path);
+                });
+
+                // Folder files
+                const prefix = path + "/";
+                const folderFiles = getVisibleFiles().filter((f) =>
+                    f.path.startsWith(prefix),
+                );
+                const selectedCount = folderFiles.filter(
+                    (f) => f.isSelected,
+                ).length;
+                const allSelected =
+                    selectedCount === folderFiles.length &&
+                    folderFiles.length > 0;
+
+                const summary = document.createElement("summary");
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = allSelected;
+                cb.indeterminate = selectedCount > 0 && !allSelected;
+                cb.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    pushUndo(
+                        allSelected ? `Deselect ${name}/` : `Select ${name}/`,
+                    );
+                    folderFiles.forEach((f) => (f.isSelected = !allSelected));
+                    renderApp();
+                };
+
+                const actions = document.createElement("div");
+                actions.className = "actions";
+                const btnExclude = document.createElement("button");
+                btnExclude.className = "action-btn danger";
+                btnExclude.title = "Exclude folder";
+                btnExclude.innerHTML = ICONS.eyeOff;
+                btnExclude.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    excludePath(prefix, name + "/");
+                };
+                actions.appendChild(btnExclude);
+
+                summary.innerHTML = ICONS.chevron + " ";
+                summary.appendChild(cb);
+                summary.insertAdjacentHTML(
+                    "beforeend",
+                    ` ${ICONS.folder} <span class="name-label mono text-sm">${name}</span>`,
+                );
+                summary.appendChild(actions);
+
+                details.appendChild(summary);
+                details.appendChild(
+                    buildNodes(children, path, depth + 1, false, isSearching),
+                );
+                return details;
+            }
+
+            function buildFile(name, fileObj) {
+                const div = document.createElement("div");
+                div.className = "file-item";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = fileObj.isSelected;
+                cb.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    fileObj.isSelected = !fileObj.isSelected;
+                    renderApp();
+                };
+
+                const actions = document.createElement("div");
+                actions.className = "actions";
+
+                const btnCopy = document.createElement("button");
+                btnCopy.className = "action-btn";
+                btnCopy.title = "Copy content";
+                btnCopy.innerHTML = ICONS.copy;
+                btnCopy.onclick = async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try {
+                        const content = await fileObj.fileRef.text();
+                        await navigator.clipboard.writeText(
+                            `// File: ${fileObj.path}\n${content}`,
+                        );
+                        toast("Copied: " + name);
+                    } catch (_) {
+                        toast("Copy failed");
+                    }
+                };
+
+                const btnExclude = document.createElement("button");
+                btnExclude.className = "action-btn danger";
+                btnExclude.title = "Exclude file";
+                btnExclude.innerHTML = ICONS.eyeOff;
+                btnExclude.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    excludePath(fileObj.path, name);
+                };
+
+                actions.appendChild(btnCopy);
+                actions.appendChild(btnExclude);
+
+                div.appendChild(cb);
+                div.insertAdjacentHTML(
+                    "beforeend",
+                    ` ${ICONS.file} <span class="name-label mono text-sm">${name}</span>`,
+                );
+                div.appendChild(actions);
+
+                div.onclick = (e) => {
+                    if (
+                        e.target.tagName === "INPUT" ||
+                        e.target.closest("button")
+                    )
+                        return;
+                    fileObj.isSelected = !fileObj.isSelected;
+                    renderApp();
+                };
+
+                return div;
+            }
+
+            // ─── Actions ────────────────────────────────────────────────────────
+            function excludePath(path, label) {
+                pushUndo(`Exclude ${label || path}`);
+                for (const f of state.files) {
                     if (f.path === path || f.path.startsWith(path)) {
                         f.isExcluded = true;
                         f.isSelected = false;
                     }
-                });
-                // Requires full render because items are completely removed from UI
+                }
                 renderApp();
             }
 
-            async function copyFileContent(btn, path) {
-                const fileNode = appState.files.find((f) => f.path === path);
-                if (fileNode) {
-                    const content = await fileNode.fileRef.text();
-                    const text = `// File: ${path}\n${content}`;
-                    navigator.clipboard.writeText(text);
-                    showFeedback(
-                        btn,
-                        '<span class="text-xs text-green">Copied</span>',
-                        "",
-                        getTemplate("icon-copy"),
-                    );
-                }
-            }
-
             function updateStats() {
-                const selected = appState.files.filter(
+                const selected = state.files.filter(
                     (f) => f.isSelected && !f.isExcluded,
                 );
-                const size = selected.reduce((acc, f) => acc + f.size, 0);
-                const tokens = estimateTokens(size);
+                const totalBytes = selected.reduce((sum, f) => sum + f.size, 0);
+                const tokens = estimateTokens(totalBytes);
 
-                $("stat-files").innerText = selected.length;
-                $("stat-tokens").innerText = (tokens / 1000).toFixed(1) + "k";
+                $("stat-files").textContent = selected.length;
+                $("stat-tokens").textContent =
+                    tokens >= 1000 ? (tokens / 1000).toFixed(1) + "k" : tokens;
 
-                let pct = Math.min((tokens / TOKEN_LIMIT) * 100, 100);
+                const pct = Math.min((tokens / TOKEN_LIMIT) * 100, 100);
                 const bar = $("token-bar");
                 bar.style.width = pct + "%";
-
-                if (pct > 90) bar.style.backgroundColor = "var(--danger)";
-                else if (pct > 75) bar.style.backgroundColor = "var(--warning)";
-                else bar.style.backgroundColor = "var(--success)";
+                bar.style.backgroundColor =
+                    pct > 90
+                        ? "var(--danger)"
+                        : pct > 75
+                          ? "var(--warning)"
+                          : "var(--success)";
             }
 
-            /**
-             * FILE STRUCTURE (FS) GENERATOR
-             */
+            // ─── FS Generator ───────────────────────────────────────────────────
             function generateFS() {
                 let files = getVisibleFiles();
-                if (appState.fsSelectedOnly) {
+                if (state.fsSelectedOnly)
                     files = files.filter((f) => f.isSelected);
-                }
 
-                const map = new Map();
-                files.forEach((f) => {
+                const dirs = new Map();
+                for (const f of files) {
                     const parts = f.path.split("/");
                     const name = parts.pop();
                     const dir = parts.length > 0 ? parts.join("/") + "/" : "/";
-                    if (!map.has(dir)) map.set(dir, []);
-                    map.get(dir).push(name);
-                });
+                    if (!dirs.has(dir)) dirs.set(dir, []);
+                    dirs.get(dir).push(name);
+                }
 
-                const sortedDirs = Array.from(map.keys()).sort();
                 let out = "";
-                sortedDirs.forEach((dir) => {
-                    out += `${dir}\n* ${map.get(dir).join(", ")}\n\n`;
-                });
-
+                for (const dir of Array.from(dirs.keys()).sort()) {
+                    out += `${dir}\n* ${dirs.get(dir).join(", ")}\n\n`;
+                }
                 $("fs-preview").value = out.trim();
             }
 
-            /**
-             * STATE GENERATOR & PARSER (+ / - logic)
-             */
+            // ─── State Generator & Parser ───────────────────────────────────────
             function generateStateText() {
-                let dirs = new Set();
-                appState.files.forEach((f) => {
+                if (document.activeElement === $("state-input")) return;
+
+                const lines = [];
+                const allNonExcluded = state.files.filter((f) => !f.isExcluded);
+
+                // Find fully-selected directories
+                const dirMap = new Map(); // dirPath -> { total, selected }
+                for (const f of allNonExcluded) {
                     const parts = f.path.split("/");
                     let current = "";
                     for (let i = 0; i < parts.length - 1; i++) {
                         current += parts[i] + "/";
-                        dirs.add(current);
+                        if (!dirMap.has(current))
+                            dirMap.set(current, { total: 0, selected: 0 });
+                        const d = dirMap.get(current);
+                        d.total++;
+                        if (f.isSelected) d.selected++;
                     }
-                });
-                dirs.add("/");
+                }
 
-                let handledPaths = new Set();
-                let stateLines = [];
-                const allFiles = appState.files;
+                // Excluded files
+                for (const f of state.files) {
+                    if (f.isExcluded) lines.push(`- ${f.path}`);
+                }
 
-                const excluded = allFiles.filter((f) => f.isExcluded);
-                excluded.forEach((f) => stateLines.push(`- ${f.path}`));
+                // Find top-level fully-selected dirs (avoid redundant children)
+                const coveredPaths = new Set();
+                const sortedDirs = Array.from(dirMap.keys()).sort(
+                    (a, b) => a.length - b.length,
+                );
 
-                function getDirState(dirPath) {
-                    const children = allFiles.filter(
-                        (f) =>
-                            (dirPath === "/"
-                                ? true
-                                : f.path.startsWith(dirPath)) && !f.isExcluded,
+                for (const dir of sortedDirs) {
+                    const info = dirMap.get(dir);
+                    // Check if parent already covers this
+                    const parentCovered = Array.from(coveredPaths).some((p) =>
+                        dir.startsWith(p),
                     );
-                    if (children.length === 0) return "empty";
-                    const selected = children.filter((f) => f.isSelected);
-                    if (selected.length === children.length) return "full";
-                    if (selected.length > 0) return "partial";
-                    return "none";
+                    if (parentCovered) continue;
+
+                    if (info.total > 0 && info.selected === info.total) {
+                        lines.push(`+ ${dir}`);
+                        coveredPaths.add(dir);
+                    }
                 }
 
-                const topDirs = Array.from(dirs).sort();
-                const processedDirs = new Set();
-
-                topDirs.forEach((dir) => {
-                    const parent = dir.split("/").slice(0, -2).join("/") + "/";
-                    if (parent !== "/" && processedDirs.has(parent)) return;
-
-                    const state = getDirState(dir);
-                    if (state === "full") {
-                        stateLines.push(`+ ${dir}`);
-                        processedDirs.add(dir);
-                        allFiles
-                            .filter((f) => f.path.startsWith(dir))
-                            .forEach((f) => handledPaths.add(f.path));
-                    }
-                });
-
-                allFiles.forEach((f) => {
-                    if (
-                        f.isSelected &&
-                        !f.isExcluded &&
-                        !handledPaths.has(f.path)
-                    ) {
-                        stateLines.push(`+ ${f.path}`);
-                    }
-                });
-
-                // Sadece State inputu odakta değilken güncelle (kullanıcı yazarken üzerine yazmasın)
-                if (document.activeElement !== $("state-input")) {
-                    $("state-input").value = stateLines.sort().join("\n");
+                // Individual selected files not covered by a directory
+                for (const f of allNonExcluded) {
+                    if (!f.isSelected) continue;
+                    const covered = Array.from(coveredPaths).some((d) =>
+                        f.path.startsWith(d),
+                    );
+                    if (!covered) lines.push(`+ ${f.path}`);
                 }
+
+                $("state-input").value = lines.sort().join("\n");
             }
 
             function parseStateText() {
@@ -1387,22 +1563,21 @@
                     .map((l) => l.trim())
                     .filter(Boolean);
 
-                appState.files.forEach((f) => {
+                // Reset all
+                state.files.forEach((f) => {
                     f.isExcluded = false;
                     f.isSelected = false;
                 });
 
-                lines.forEach((line) => {
-                    const action = line.charAt(0);
+                for (const line of lines) {
+                    const action = line[0];
                     const path = line.slice(1).trim();
+                    if (!path) continue;
 
-                    if (!path) return;
-
-                    appState.files.forEach((f) => {
+                    for (const f of state.files) {
                         const matches =
                             f.path === path ||
-                            (path.endsWith("/") && f.path.startsWith(path)) ||
-                            (path === "/" && true);
+                            (path.endsWith("/") && f.path.startsWith(path));
                         if (matches) {
                             if (action === "+") {
                                 f.isSelected = true;
@@ -1413,60 +1588,96 @@
                                 f.isSelected = false;
                             }
                         }
-                    });
-                });
-
+                    }
+                }
                 renderApp();
             }
 
-            /**
-             * EXPORT LOGIC
-             */
+            // ─── Export ──────────────────────────────────────────────────────────
             async function generateExportContent() {
-                const selectedFiles = appState.files.filter(
+                const selected = state.files.filter(
                     (f) => f.isSelected && !f.isExcluded,
                 );
-                if (selectedFiles.length === 0) return "No files selected.";
+                if (selected.length === 0) return "No files selected.";
 
-                const fsString = $("fs-preview").value;
-                let out = "";
+                // Parallel read
+                const contents = await Promise.all(
+                    selected.map(async (f) => ({
+                        path: f.path,
+                        name: f.name,
+                        content: await f.fileRef.text(),
+                    })),
+                );
 
-                if (appState.format === "txt") {
-                    out += `FILE STRUCTURE:\n${fsString}\n\n`;
-                    out += `================================================================\n`;
-                    out += `FILES EXPORT (${selectedFiles.length} files)\n`;
-                    out += `================================================================\n\n`;
+                const fs = $("fs-preview").value;
+                const fmt = state.format;
 
-                    for (const file of selectedFiles) {
-                        const content = await file.fileRef.text();
-                        out += `--- BEGIN FILE: ${file.path} ---\n${content}\n--- END FILE: ${file.path} ---\n\n`;
+                if (fmt === "txt") {
+                    let out = `FILE STRUCTURE:\n${fs}\n\n${"=".repeat(64)}\nFILES EXPORT (${contents.length} files)\n${"=".repeat(64)}\n\n`;
+                    for (const { path, content } of contents) {
+                        out += `--- BEGIN FILE: ${path} ---\n${content}\n--- END FILE: ${path} ---\n\n`;
                     }
-                } else if (appState.format === "md") {
-                    out += `# Project Export\n\n## File Structure\n\`\`\`text\n${fsString}\n\`\`\`\n\n## Files\n\n`;
-                    for (const file of selectedFiles) {
-                        const ext = file.name.split(".").pop();
-                        const content = await file.fileRef.text();
-                        out += `### \`${file.path}\`\n\`\`\`${ext}\n${content}\n\`\`\`\n\n`;
-                    }
-                } else if (appState.format === "xml") {
-                    out += `<project>\n  <file_structure><![CDATA[\n${fsString}\n  ]]></file_structure>\n\n`;
-                    for (const file of selectedFiles) {
-                        const content = await file.fileRef.text();
-                        out += `  <file path="${file.path}">\n<![CDATA[\n${content}\n]]>\n  </file>\n`;
-                    }
-                    out += `</project>`;
+                    return out;
                 }
 
-                return out;
+                if (fmt === "md") {
+                    let out = `# Project Export\n\n## File Structure\n\`\`\`text\n${fs}\n\`\`\`\n\n## Files\n\n`;
+                    for (const { path, name, content } of contents) {
+                        const ext = name.split(".").pop();
+                        out += `### \`${path}\`\n\`\`\`${ext}\n${content}\n\`\`\`\n\n`;
+                    }
+                    return out;
+                }
+
+                if (fmt === "xml") {
+                    let out = `<project>\n  <file_structure><![CDATA[\n${fs}\n  ]]></file_structure>\n\n`;
+                    for (const { path, content } of contents) {
+                        out += `  <file path="${path}">\n<![CDATA[\n${content}\n]]>\n  </file>\n`;
+                    }
+                    return out + `</project>`;
+                }
+
+                return "";
             }
 
-            /**
-             * EVENT LISTENERS
-             */
+            // ─── Custom Ignore Patterns UI ──────────────────────────────────────
+            function renderIgnoreTags() {
+                const container = $("ignore-tags");
+                container.innerHTML = "";
+                for (let i = 0; i < state.customIgnorePatterns.length; i++) {
+                    const tag = document.createElement("span");
+                    tag.className = "ignore-tag";
+                    tag.innerHTML = `${state.customIgnorePatterns[i]} <button onclick="removeIgnorePattern(${i})">&times;</button>`;
+                    container.appendChild(tag);
+                }
+            }
+
+            function addIgnorePattern(pattern) {
+                const clean = pattern.trim();
+                if (!clean || state.customIgnorePatterns.includes(clean))
+                    return;
+                state.customIgnorePatterns.push(clean);
+                renderIgnoreTags();
+                renderApp();
+            }
+
+            function removeIgnorePattern(index) {
+                state.customIgnorePatterns.splice(index, 1);
+                renderIgnoreTags();
+                renderApp();
+            }
+
+            // ─── Event Binding ──────────────────────────────────────────────────
             const dropZone = $("drop-zone");
             const fileInput = $("file-input");
 
-            // Drag & Drop
+            function showWorkspace() {
+                $("drop-zone").classList.add("hidden");
+                $("work-area").style.display = "flex";
+                $("right-panel").classList.remove("hidden");
+                $("btn-reset").classList.remove("hidden");
+            }
+
             dropZone.ondragover = (e) => {
                 e.preventDefault();
                 dropZone.classList.add("dragover");
@@ -1479,68 +1690,82 @@
                 e.preventDefault();
                 dropZone.classList.remove("dragover");
                 if (e.dataTransfer.items) {
-                    $("drop-zone").classList.add("hidden");
-                    $("work-area").classList.remove("hidden");
-                    $("right-panel").classList.remove("hidden");
-                    $("btn-reset").classList.remove("hidden");
+                    showWorkspace();
                     await processFileSystem(e.dataTransfer.items);
                 }
             };
-
-            // File Input Click
             dropZone.onclick = () => fileInput.click();
             fileInput.onchange = async (e) => {
                 if (e.target.files.length > 0) {
-                    $("drop-zone").classList.add("hidden");
-                    $("work-area").classList.remove("hidden");
-                    $("right-panel").classList.remove("hidden");
-                    $("btn-reset").classList.remove("hidden");
+                    showWorkspace();
                     await processFileSystem(e.target.files);
                 }
             };
 
-            // Top Actions
             $("btn-reset").onclick = () => location.reload();
 
-            // Left Panel Actions
             $("search-input").oninput = (e) => {
-                appState.searchQuery = e.target.value.toLowerCase();
+                state.searchQuery = e.target.value.toLowerCase();
                 renderApp();
-            };
-            $("toggle-gitignore").onchange = (e) => {
-                appState.useGitignore = e.target.checked;
-                applyGitignoreToState();
-                renderApp();
-            };
-            $("btn-expand").onclick = () => {
-                document.querySelectorAll("details").forEach((d) => {
-                    d.open = true;
-                    appState.expandedPaths.add(
-                        d.querySelector(".name-label").textContent,
-                    ); // Rough tracking
-                });
-            };
-            $("btn-collapse").onclick = () => {
-                document
-                    .querySelectorAll("details")
-                    .forEach((d) => (d.open = false));
-                appState.expandedPaths.clear();
             };
 
-            // Right Panel Actions
+            $("toggle-gitignore").onchange = (e) => {
+                state.useGitignore = e.target.checked;
+                // Re-apply gitignore visibility
+                state.files.forEach((f) => {
+                    if (f.isGitignored && !f.isExcluded) {
+                        f.isSelected = !state.useGitignore;
+                    }
+                });
+                renderApp();
+            };
+
+            $("btn-expand").onclick = () => {
+                $("tree-container")
+                    .querySelectorAll("details")
+                    .forEach((d) => {
+                        d.open = true;
+                        // Extract real path from the tree structure
+                        const label = d.querySelector(".name-label");
+                        if (label) {
+                            // Walk up to build full path
+                            const path = getDetailsPath(d);
+                            if (path) state.expandedPaths.add(path);
+                        }
+                    });
+            };
+
+            $("btn-collapse").onclick = () => {
+                $("tree-container")
+                    .querySelectorAll("details")
+                    .forEach((d) => (d.open = false));
+                state.expandedPaths.clear();
+            };
+
+            // Helper to reconstruct full path from nested details
+            function getDetailsPath(details) {
+                const parts = [];
+                let el = details;
+                while (el && el !== $("tree-container")) {
+                    if (el.tagName === "DETAILS") {
+                        const label = el.querySelector(
+                            ":scope > summary .name-label",
+                        );
+                        if (label) parts.unshift(label.textContent);
+                    }
+                    el = el.parentElement;
+                }
+                return parts.join("/");
+            }
+
             $("fs-selected-only").onchange = (e) => {
-                appState.fsSelectedOnly = e.target.checked;
+                state.fsSelectedOnly = e.target.checked;
                 generateFS();
             };
 
-            $("btn-copy-fs").onclick = () => {
-                navigator.clipboard.writeText($("fs-preview").value);
-                showFeedback(
-                    $("btn-copy-fs"),
-                    '<span class="text-xs text-green">Copied!</span>',
-                    "",
-                    getTemplate("icon-copy"),
-                );
+            $("btn-copy-fs").onclick = async () => {
+                await navigator.clipboard.writeText($("fs-preview").value);
+                toast("Structure copied");
             };
 
             document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -1549,57 +1774,83 @@
                         .querySelectorAll(".tab-btn")
                         .forEach((b) => b.classList.remove("active"));
                     btn.classList.add("active");
-                    appState.format = btn.dataset.format;
+                    state.format = btn.dataset.format;
                 };
             });
 
             $("state-input").onblur = parseStateText;
 
-            // Export Buttons
             $("btn-copy-export").onclick = async function () {
-                const originalText = "Copy for AI";
-                const originalIcon = getTemplate("icon-copy");
-                this.innerHTML = "Processing...";
+                const orig = this.innerHTML;
+                this.innerHTML = "Processing…";
+                this.disabled = true;
                 try {
                     const content = await generateExportContent();
                     await navigator.clipboard.writeText(content);
-                    showFeedback(
-                        this,
-                        `${originalIcon} Copied!`,
-                        originalText,
-                        originalIcon,
-                    );
+                    toast("Exported to clipboard");
+                    flashBtn(this, ICONS.copy + " Copied!", 1500);
                 } catch (e) {
-                    this.innerHTML = `Error!`;
-                    setTimeout(
-                        () => (this.innerHTML = originalIcon + originalText),
-                        2000,
-                    );
+                    flashBtn(this, "Error!", 1500);
+                } finally {
+                    this.disabled = false;
+                    // Restore after flash
+                    setTimeout(() => {
+                        this.innerHTML = orig;
+                    }, 1600);
                 }
             };
 
             $("btn-download").onclick = async function () {
-                const originalText = "Download";
-                const icon =
-                    '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>';
-                this.innerHTML = "Preparing...";
+                const orig = this.innerHTML;
+                this.innerHTML = "Preparing…";
+                this.disabled = true;
                 try {
                     const content = await generateExportContent();
                     const blob = new Blob([content], { type: "text/plain" });
                     const a = document.createElement("a");
                     a.href = URL.createObjectURL(blob);
-                    a.download = `context_export.${appState.format}`;
+                    a.download = `context_export.${state.format}`;
                     a.click();
                     URL.revokeObjectURL(a.href);
-                    showFeedback(this, `${icon} Done!`, originalText, icon);
+                    toast("Download started");
                 } catch (e) {
-                    this.innerHTML = "Error!";
-                    setTimeout(
-                        () => (this.innerHTML = icon + originalText),
-                        2000,
-                    );
+                    toast("Download failed");
+                } finally {
+                    this.disabled = false;
+                    this.innerHTML = orig;
                 }
             };
+
+            $("ignore-input").onkeydown = (e) => {
+                if (e.key === "Enter") {
+                    const val = e.target.value.trim();
+                    if (val) {
+                        // Support comma-separated
+                        val.split(",").forEach((p) =>
+                            addIgnorePattern(p.trim()),
+                        );
+                        e.target.value = "";
+                    }
+                }
+            };
+
+            // Keyboard shortcut: Ctrl+Z for undo
+            document.addEventListener("keydown", (e) => {
+                if (
+                    (e.ctrlKey || e.metaKey) &&
+                    e.key === "z" &&
+                    state.undoStack.length > 0
+                ) {
+                    // Don't intercept if user is typing in a textarea/input
+                    if (
+                        document.activeElement.tagName === "TEXTAREA" ||
+                        document.activeElement.tagName === "INPUT"
+                    )
+                        return;
+                    e.preventDefault();
+                    popUndo();
+                }
+            });
         </script>
     </body>
 </html>
