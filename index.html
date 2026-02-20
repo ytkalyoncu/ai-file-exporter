@@ -127,7 +127,7 @@
                 max-width: 450px;
             }
             #right-panel {
-                flex: 1.5;
+                flex: 1.2;
                 border-right: none;
                 border-left: 1px solid var(--border);
             }
@@ -139,7 +139,7 @@
                 border: 1px solid var(--border);
                 color: var(--text-main);
                 border-radius: var(--radius-md);
-                padding: 0.5rem;
+                padding: 0.75rem;
                 font-family: var(--font-mono);
                 font-size: 0.875rem;
                 outline: none;
@@ -264,6 +264,12 @@
             details {
                 margin-left: 1rem;
             }
+            /* Remove default margin for root elements to align left */
+            #tree-container > details,
+            #tree-container > .file-item {
+                margin-left: 0;
+            }
+
             summary {
                 display: flex;
                 align-items: center;
@@ -290,6 +296,9 @@
                 cursor: pointer;
                 position: relative;
             }
+            #tree-container > .file-item {
+                padding-left: 2rem;
+            } /* Root file padding */
 
             /* Hover Actions */
             .actions {
@@ -385,16 +394,26 @@
                 color: white;
             }
 
-            /* Textareas */
+            /* Textareas Layout */
+            .right-layout {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                flex: 1;
+                min-height: 0;
+            }
+            .box-container {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-height: 0;
+            }
             .code-box {
                 flex: 1;
                 resize: none;
                 white-space: pre;
                 line-height: 1.5;
-            }
-            .state-box {
-                height: 150px;
-                resize: none;
+                min-height: 0;
             }
 
             /* Utility Classes */
@@ -466,7 +485,7 @@
                     />
                 </div>
 
-                <!-- Work Area (Hidden until files loaded) -->
+                <!-- Work Area -->
                 <div
                     id="work-area"
                     class="hidden flex-col"
@@ -480,7 +499,7 @@
                             type="text"
                             id="search-input"
                             placeholder="Search files..."
-                            style="flex: 1"
+                            style="flex: 1; padding: 0.5rem"
                         />
                     </div>
                     <div
@@ -521,10 +540,11 @@
                 <div class="card">
                     <div class="flex justify-between text-sm font-mono">
                         <span
-                            >Selected Files:
+                            >Selected:
                             <strong id="stat-files" class="text-green"
                                 >0</strong
-                            ></span
+                            >
+                            files</span
                         >
                         <span
                             >Est. Tokens: <strong id="stat-tokens">0</strong>
@@ -588,13 +608,10 @@
                     </div>
                 </div>
 
-                <!-- Layout Grid for FS & State -->
-                <div
-                    class="flex gap-4"
-                    style="flex: 1; overflow: hidden; margin-bottom: 1rem"
-                >
+                <!-- Vertical Layout Grid for FS & State -->
+                <div class="right-layout">
                     <!-- File Structure Preview -->
-                    <div class="flex flex-col flex-1" style="min-width: 0">
+                    <div class="box-container">
                         <div
                             class="flex items-center justify-between"
                             style="margin-bottom: 0.5rem"
@@ -615,7 +632,7 @@
                                 <button
                                     id="btn-copy-fs"
                                     class="action-btn"
-                                    title="Copy Structure Only"
+                                    title="Copy Structure"
                                 >
                                     <svg
                                         class="icon-sm"
@@ -648,24 +665,23 @@
                     </div>
 
                     <!-- Selection State -->
-                    <div class="flex flex-col" style="flex: 0.8; min-width: 0">
-                        <h3 class="text-sm" style="margin-bottom: 0.5rem">
-                            Selection State
-                        </h3>
+                    <div class="box-container">
+                        <div
+                            class="flex items-center justify-between"
+                            style="margin-bottom: 0.5rem"
+                        >
+                            <h3 class="text-sm flex items-center gap-2">
+                                Selection State
+                            </h3>
+                            <span class="text-xs text-muted"
+                                >Edit & blur to apply</span
+                            >
+                        </div>
                         <textarea
                             id="state-input"
-                            class="code-box state-box"
-                            style="flex: 1"
+                            class="code-box"
                             placeholder="Paste state here...&#10;&#10;+ src/&#10;- src/ignore.ts"
                         ></textarea>
-                        <p
-                            class="text-xs text-muted"
-                            style="margin-top: 0.5rem; line-height: 1.4"
-                        >
-                            <strong>+</strong> path/ (Selected)<br />
-                            <strong>-</strong> path/ (Excluded/Hidden)<br />
-                            <em>Edit and click outside to apply.</em>
-                        </p>
                     </div>
                 </div>
             </div>
@@ -776,13 +792,13 @@
             ];
 
             let appState = {
-                files: [], // { path, name, size, fileRef, isSelected, isExcluded, isGitignored }
+                files: [],
                 gitignoreRules: [],
                 useGitignore: true,
                 searchQuery: "",
-                format: "txt", // txt, md, xml
+                format: "txt",
                 fsSelectedOnly: true,
-                isProcessing: false,
+                expandedPaths: new Set(), // Tracks open folders
             };
 
             /**
@@ -819,7 +835,6 @@
                 };
             }
 
-            // Show temporary feedback on button
             function showFeedback(btn, text, originalText, originalIcon = "") {
                 btn.innerHTML = text;
                 setTimeout(
@@ -828,24 +843,28 @@
                 );
             }
 
+            // Stop events from triggering parent summary toggle
+            function stopPropagation(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
             /**
              * FILE SYSTEM PARSING
              */
             async function processFileSystem(items) {
                 appState.files = [];
                 appState.gitignoreRules = [];
+                appState.expandedPaths.clear();
 
-                // First pass: Collect all files and find .gitignore
                 const entries = [];
 
-                // Fallback for input[type=file]
                 if (items instanceof FileList) {
                     for (let file of items) {
                         const path = file.webkitRelativePath || file.name;
                         entries.push({ file, path, name: file.name });
                     }
                 } else {
-                    // Drag & Drop DataTransferItems
                     const processEntry = async (entry, path = "") => {
                         if (!entry) return;
                         const fullPath = path + entry.name;
@@ -883,17 +902,14 @@
                     await Promise.all(promises);
                 }
 
-                // Process found files
                 for (const item of entries) {
                     const ext = item.name.split(".").pop().toLowerCase();
                     if (BINARY_EXTS.has(ext)) continue;
 
-                    // Setup default ignores
                     let isGitignored = IGNORED_DIRS_DEFAULT.some((d) =>
                         item.path.includes(d + "/"),
                     );
 
-                    // Load gitignore rules
                     if (item.name === ".gitignore") {
                         const content = await item.file.text();
                         appState.gitignoreRules.push(parseGitignore(content));
@@ -930,7 +946,7 @@
                         f.isGitignored &&
                         !f.isExcluded
                     ) {
-                        f.isSelected = true; // restore selection if gitignore disabled
+                        f.isSelected = true;
                     }
                 });
             }
@@ -973,7 +989,6 @@
                     return;
                 }
 
-                // Build hierarchical object
                 const root = {};
                 visibleFiles.forEach((f) => {
                     const parts = f.path.split("/");
@@ -987,7 +1002,11 @@
                     });
                 });
 
-                function createDOMNode(obj, pathPrefix = "") {
+                let isFirstRender =
+                    appState.expandedPaths.size === 0 &&
+                    appState.searchQuery === "";
+
+                function createDOMNode(obj, pathPrefix = "", depth = 0) {
                     const keys = Object.keys(obj).sort((a, b) => {
                         const isDirA = !obj[a].fileRef;
                         const isDirB = !obj[b].fileRef;
@@ -1006,11 +1025,35 @@
 
                         if (isDir) {
                             const details = document.createElement("details");
-                            details.open = appState.searchQuery.length > 0; // Auto expand on search
+
+                            // Expand logic:
+                            // 1. Search active -> Expand all
+                            // 2. Initial load -> Expand layer 1 (depth 0)
+                            // 3. User previously expanded it -> Expand
+                            const isSearching = appState.searchQuery.length > 0;
+                            const isRootLayerOnFirstLoad =
+                                isFirstRender && depth === 0;
+                            const isPreviouslyExpanded =
+                                appState.expandedPaths.has(currentPath);
+
+                            if (
+                                isSearching ||
+                                isRootLayerOnFirstLoad ||
+                                isPreviouslyExpanded
+                            ) {
+                                details.open = true;
+                                if (isRootLayerOnFirstLoad)
+                                    appState.expandedPaths.add(currentPath);
+                            }
+
+                            details.addEventListener("toggle", (e) => {
+                                if (e.target.open)
+                                    appState.expandedPaths.add(currentPath);
+                                else appState.expandedPaths.delete(currentPath);
+                            });
 
                             const summary = document.createElement("summary");
 
-                            // Calculate folder state
                             const folderFiles = appState.files.filter(
                                 (f) =>
                                     f.path.startsWith(currentPath + "/") &&
@@ -1032,60 +1075,104 @@
                                 cb.checked = false;
                             }
 
+                            // CRITICAL FIX: Prevent summary toggle on checkbox click
                             cb.onclick = (e) => {
-                                e.stopPropagation();
+                                stopPropagation(e);
                                 const newState = e.target.checked;
                                 folderFiles.forEach(
                                     (f) => (f.isSelected = newState),
                                 );
-                                renderApp(); // Heavy, but keeps UI in sync. Fast enough for vanilla.
+                                // Update state without full DOM recreation
+                                updateDerivedState();
+                                syncDOMCheckboxes();
                             };
 
                             const actions = document.createElement("div");
                             actions.className = "actions";
-                            actions.innerHTML = `
-                    <button class="action-btn danger" title="Exclude Folder" onclick="excludePath(event, '${currentPath}/')">${getTemplate("icon-eye-off")}</button>
-                `;
 
-                            summary.innerHTML = `${getTemplate("icon-chevron")} ${cb.outerHTML} ${getTemplate("icon-folder")} <span class="name-label font-mono text-sm">${key}</span>`;
-                            // Re-attach listeners because innerHTML wiped them
+                            const btnExclude = document.createElement("button");
+                            btnExclude.className = "action-btn danger";
+                            btnExclude.title = "Exclude Folder";
+                            btnExclude.innerHTML = getTemplate("icon-eye-off");
+                            // CRITICAL FIX: Prevent summary toggle on button click
+                            btnExclude.onclick = (e) => {
+                                stopPropagation(e);
+                                excludePath(currentPath + "/");
+                            };
+
+                            actions.appendChild(btnExclude);
+
+                            summary.innerHTML = `${getTemplate("icon-chevron")} `;
+                            summary.appendChild(cb);
+                            summary.innerHTML += ` ${getTemplate("icon-folder")} <span class="name-label font-mono text-sm">${key}</span>`;
+
+                            // Re-bind events because innerHTML wiped them
                             summary.querySelector("input").onclick = cb.onclick;
                             summary.appendChild(actions);
 
                             details.appendChild(summary);
                             details.appendChild(
-                                createDOMNode(item, currentPath),
+                                createDOMNode(item, currentPath, depth + 1),
                             );
                             fragment.appendChild(details);
                         } else {
-                            // File Row
+                            // File
                             const div = document.createElement("div");
                             div.className = "file-item";
 
                             const cb = document.createElement("input");
                             cb.type = "checkbox";
                             cb.checked = item.isSelected;
+                            cb.dataset.path = item.path; // for syncDOMCheckboxes
+
                             cb.onclick = (e) => {
-                                e.stopPropagation();
+                                stopPropagation(e);
                                 item.isSelected = e.target.checked;
                                 updateDerivedState();
-                                // Just update parent checkboxes visually instead of full re-render for performance
-                                updateParentCheckboxes(cb);
+                                syncDOMCheckboxes();
                             };
 
                             const actions = document.createElement("div");
                             actions.className = "actions";
-                            actions.innerHTML = `
-                    <button class="action-btn" title="Copy Content" onclick="copyFileContent(event, '${item.path}')">${getTemplate("icon-copy")}</button>
-                    <button class="action-btn danger" title="Exclude File" onclick="excludePath(event, '${item.path}')">${getTemplate("icon-eye-off")}</button>
-                `;
 
-                            div.innerHTML = `${cb.outerHTML} ${getTemplate("icon-file")} <span class="name-label font-mono text-sm">${key}</span>`;
+                            const btnCopy = document.createElement("button");
+                            btnCopy.className = "action-btn";
+                            btnCopy.title = "Copy Content";
+                            btnCopy.innerHTML = getTemplate("icon-copy");
+                            btnCopy.onclick = (e) => {
+                                stopPropagation(e);
+                                copyFileContent(btnCopy, item.path);
+                            };
+
+                            const btnExclude = document.createElement("button");
+                            btnExclude.className = "action-btn danger";
+                            btnExclude.title = "Exclude File";
+                            btnExclude.innerHTML = getTemplate("icon-eye-off");
+                            btnExclude.onclick = (e) => {
+                                stopPropagation(e);
+                                excludePath(item.path);
+                            };
+
+                            actions.appendChild(btnCopy);
+                            actions.appendChild(btnExclude);
+
+                            div.innerHTML = ``;
+                            div.appendChild(cb);
+                            div.innerHTML += ` ${getTemplate("icon-file")} <span class="name-label font-mono text-sm">${key}</span>`;
+
                             div.querySelector("input").onclick = cb.onclick;
                             div.appendChild(actions);
 
-                            div.onclick = () =>
+                            // Click row to toggle checkbox
+                            div.onclick = (e) => {
+                                if (
+                                    e.target.tagName === "INPUT" ||
+                                    e.target.tagName === "BUTTON" ||
+                                    e.target.closest("button")
+                                )
+                                    return;
                                 div.querySelector("input").click();
+                            };
 
                             fragment.appendChild(div);
                         }
@@ -1096,30 +1183,48 @@
                 container.appendChild(createDOMNode(root));
             }
 
-            // Quick DOM update for checkboxes to avoid full re-render
-            function updateParentCheckboxes(el) {
-                let parent = el.closest("details");
-                while (parent) {
-                    const summaryCb = parent.querySelector(
+            // Fast DOM checkbox sync (avoids rebuilding the whole tree)
+            function syncDOMCheckboxes() {
+                const container = $("tree-container");
+
+                // 1. Sync file checkboxes
+                container
+                    .querySelectorAll(".file-item > input")
+                    .forEach((cb) => {
+                        const file = appState.files.find(
+                            (f) => f.path === cb.dataset.path,
+                        );
+                        if (file) cb.checked = file.isSelected;
+                    });
+
+                // 2. Sync folder checkboxes from bottom up
+                const detailsElements = Array.from(
+                    container.querySelectorAll("details"),
+                ).reverse();
+                detailsElements.forEach((details) => {
+                    const summaryCb = details.querySelector(
                         'summary > input[type="checkbox"]',
                     );
                     if (summaryCb) {
                         const childCbs = Array.from(
-                            parent.querySelectorAll(
+                            details.querySelectorAll(
                                 ":scope > details > summary > input, :scope > .file-item > input",
                             ),
                         );
-                        const checked = childCbs.filter(
+                        const checkedCount = childCbs.filter(
                             (c) => c.checked,
                         ).length;
-                        const indet = childCbs.filter(
+                        const indetCount = childCbs.filter(
                             (c) => c.indeterminate,
                         ).length;
 
-                        if (checked === 0 && indet === 0) {
+                        if (checkedCount === 0 && indetCount === 0) {
                             summaryCb.checked = false;
                             summaryCb.indeterminate = false;
-                        } else if (checked === childCbs.length && indet === 0) {
+                        } else if (
+                            checkedCount === childCbs.length &&
+                            indetCount === 0
+                        ) {
                             summaryCb.checked = true;
                             summaryCb.indeterminate = false;
                         } else {
@@ -1127,27 +1232,24 @@
                             summaryCb.indeterminate = true;
                         }
                     }
-                    parent = parent.parentElement.closest("details");
-                }
+                });
             }
 
             /**
              * ACTIONS
              */
-            window.excludePath = (e, path) => {
-                e.stopPropagation();
+            function excludePath(path) {
                 appState.files.forEach((f) => {
                     if (f.path === path || f.path.startsWith(path)) {
                         f.isExcluded = true;
                         f.isSelected = false;
                     }
                 });
+                // Requires full render because items are completely removed from UI
                 renderApp();
-            };
+            }
 
-            window.copyFileContent = async (e, path) => {
-                e.stopPropagation();
-                const btn = e.currentTarget;
+            async function copyFileContent(btn, path) {
                 const fileNode = appState.files.find((f) => f.path === path);
                 if (fileNode) {
                     const content = await fileNode.fileRef.text();
@@ -1160,7 +1262,7 @@
                         getTemplate("icon-copy"),
                     );
                 }
-            };
+            }
 
             function updateStats() {
                 const selected = appState.files.filter(
@@ -1212,8 +1314,6 @@
              * STATE GENERATOR & PARSER (+ / - logic)
              */
             function generateStateText() {
-                // We want the most compact representation using folders.
-                // 1. Group by directories
                 let dirs = new Set();
                 appState.files.forEach((f) => {
                     const parts = f.path.split("/");
@@ -1223,26 +1323,15 @@
                         dirs.add(current);
                     }
                 });
-                // Add root
                 dirs.add("/");
 
-                // Sort descending by depth to process children before parents
-                const sortedDirs = Array.from(dirs).sort(
-                    (a, b) => b.split("/").length - a.split("/").length,
-                );
-
-                // Track what has been handled
                 let handledPaths = new Set();
                 let stateLines = [];
-
-                // Simple top-down approach for clear output
                 const allFiles = appState.files;
 
-                // Check Excluded files First
                 const excluded = allFiles.filter((f) => f.isExcluded);
                 excluded.forEach((f) => stateLines.push(`- ${f.path}`));
 
-                // Helper to check if a directory is fully selected
                 function getDirState(dirPath) {
                     const children = allFiles.filter(
                         (f) =>
@@ -1257,12 +1346,10 @@
                     return "none";
                 }
 
-                // Identify top level full directories
                 const topDirs = Array.from(dirs).sort();
                 const processedDirs = new Set();
 
                 topDirs.forEach((dir) => {
-                    // Skip if parent is already fully selected
                     const parent = dir.split("/").slice(0, -2).join("/") + "/";
                     if (parent !== "/" && processedDirs.has(parent)) return;
 
@@ -1270,14 +1357,12 @@
                     if (state === "full") {
                         stateLines.push(`+ ${dir}`);
                         processedDirs.add(dir);
-                        // Mark all child files as handled
                         allFiles
                             .filter((f) => f.path.startsWith(dir))
                             .forEach((f) => handledPaths.add(f.path));
                     }
                 });
 
-                // Add remaining individual selected files
                 allFiles.forEach((f) => {
                     if (
                         f.isSelected &&
@@ -1288,7 +1373,10 @@
                     }
                 });
 
-                $("state-input").value = stateLines.sort().join("\n");
+                // Sadece State inputu odakta değilken güncelle (kullanıcı yazarken üzerine yazmasın)
+                if (document.activeElement !== $("state-input")) {
+                    $("state-input").value = stateLines.sort().join("\n");
+                }
             }
 
             function parseStateText() {
@@ -1298,10 +1386,9 @@
                     .map((l) => l.trim())
                     .filter(Boolean);
 
-                // Reset all non-gitignored to unselected, and remove explicit exclusions
                 appState.files.forEach((f) => {
                     f.isExcluded = false;
-                    f.isSelected = false; // We build selection purely from the text now
+                    f.isSelected = false;
                 });
 
                 lines.forEach((line) => {
@@ -1393,7 +1480,6 @@
                 if (e.dataTransfer.items) {
                     $("drop-zone").classList.add("hidden");
                     $("work-area").classList.remove("hidden");
-                    $("left-panel").style.maxWidth = "400px";
                     $("right-panel").classList.remove("hidden");
                     $("btn-reset").classList.remove("hidden");
                     await processFileSystem(e.dataTransfer.items);
@@ -1406,7 +1492,6 @@
                 if (e.target.files.length > 0) {
                     $("drop-zone").classList.add("hidden");
                     $("work-area").classList.remove("hidden");
-                    $("left-panel").style.maxWidth = "400px";
                     $("right-panel").classList.remove("hidden");
                     $("btn-reset").classList.remove("hidden");
                     await processFileSystem(e.target.files);
@@ -1426,14 +1511,20 @@
                 applyGitignoreToState();
                 renderApp();
             };
-            $("btn-expand").onclick = () =>
-                document
-                    .querySelectorAll("details")
-                    .forEach((d) => (d.open = true));
-            $("btn-collapse").onclick = () =>
+            $("btn-expand").onclick = () => {
+                document.querySelectorAll("details").forEach((d) => {
+                    d.open = true;
+                    appState.expandedPaths.add(
+                        d.querySelector(".name-label").textContent,
+                    ); // Rough tracking
+                });
+            };
+            $("btn-collapse").onclick = () => {
                 document
                     .querySelectorAll("details")
                     .forEach((d) => (d.open = false));
+                appState.expandedPaths.clear();
+            };
 
             // Right Panel Actions
             $("fs-selected-only").onchange = (e) => {
