@@ -1063,12 +1063,14 @@
                             const selectedCount = folderFiles.filter(
                                 (f) => f.isSelected,
                             ).length;
+                            const isAllSelected =
+                                selectedCount === folderFiles.length &&
+                                folderFiles.length > 0;
 
                             const cb = document.createElement("input");
                             cb.type = "checkbox";
                             if (selectedCount > 0) {
-                                cb.checked =
-                                    selectedCount === folderFiles.length;
+                                cb.checked = isAllSelected;
                                 cb.indeterminate =
                                     selectedCount < folderFiles.length;
                             } else {
@@ -1077,14 +1079,12 @@
 
                             // CRITICAL FIX: Prevent summary toggle on checkbox click
                             cb.onclick = (e) => {
-                                stopPropagation(e);
-                                const newState = e.target.checked;
+                                e.preventDefault();
+                                e.stopPropagation();
                                 folderFiles.forEach(
-                                    (f) => (f.isSelected = newState),
+                                    (f) => (f.isSelected = !isAllSelected),
                                 );
-                                // Update state without full DOM recreation
-                                updateDerivedState();
-                                syncDOMCheckboxes();
+                                renderApp();
                             };
 
                             const actions = document.createElement("div");
@@ -1094,9 +1094,9 @@
                             btnExclude.className = "action-btn danger";
                             btnExclude.title = "Exclude Folder";
                             btnExclude.innerHTML = getTemplate("icon-eye-off");
-                            // CRITICAL FIX: Prevent summary toggle on button click
                             btnExclude.onclick = (e) => {
-                                stopPropagation(e);
+                                e.preventDefault();
+                                e.stopPropagation();
                                 excludePath(currentPath + "/");
                             };
 
@@ -1104,10 +1104,10 @@
 
                             summary.innerHTML = `${getTemplate("icon-chevron")} `;
                             summary.appendChild(cb);
-                            summary.innerHTML += ` ${getTemplate("icon-folder")} <span class="name-label font-mono text-sm">${key}</span>`;
-
-                            // Re-bind events because innerHTML wiped them
-                            summary.querySelector("input").onclick = cb.onclick;
+                            summary.insertAdjacentHTML(
+                                "beforeend",
+                                ` ${getTemplate("icon-folder")} <span class="name-label font-mono text-sm">${key}</span>`,
+                            );
                             summary.appendChild(actions);
 
                             details.appendChild(summary);
@@ -1116,20 +1116,18 @@
                             );
                             fragment.appendChild(details);
                         } else {
-                            // File
                             const div = document.createElement("div");
                             div.className = "file-item";
 
                             const cb = document.createElement("input");
                             cb.type = "checkbox";
                             cb.checked = item.isSelected;
-                            cb.dataset.path = item.path; // for syncDOMCheckboxes
 
                             cb.onclick = (e) => {
-                                stopPropagation(e);
-                                item.isSelected = e.target.checked;
-                                updateDerivedState();
-                                syncDOMCheckboxes();
+                                e.preventDefault();
+                                e.stopPropagation();
+                                item.isSelected = !item.isSelected;
+                                renderApp();
                             };
 
                             const actions = document.createElement("div");
@@ -1140,7 +1138,8 @@
                             btnCopy.title = "Copy Content";
                             btnCopy.innerHTML = getTemplate("icon-copy");
                             btnCopy.onclick = (e) => {
-                                stopPropagation(e);
+                                e.preventDefault();
+                                e.stopPropagation();
                                 copyFileContent(btnCopy, item.path);
                             };
 
@@ -1149,21 +1148,22 @@
                             btnExclude.title = "Exclude File";
                             btnExclude.innerHTML = getTemplate("icon-eye-off");
                             btnExclude.onclick = (e) => {
-                                stopPropagation(e);
+                                e.preventDefault();
+                                e.stopPropagation();
                                 excludePath(item.path);
                             };
 
                             actions.appendChild(btnCopy);
                             actions.appendChild(btnExclude);
 
-                            div.innerHTML = ``;
+                            div.innerHTML = "";
                             div.appendChild(cb);
-                            div.innerHTML += ` ${getTemplate("icon-file")} <span class="name-label font-mono text-sm">${key}</span>`;
-
-                            div.querySelector("input").onclick = cb.onclick;
+                            div.insertAdjacentHTML(
+                                "beforeend",
+                                ` ${getTemplate("icon-file")} <span class="name-label font-mono text-sm">${key}</span>`,
+                            );
                             div.appendChild(actions);
 
-                            // Click row to toggle checkbox
                             div.onclick = (e) => {
                                 if (
                                     e.target.tagName === "INPUT" ||
@@ -1171,7 +1171,8 @@
                                     e.target.closest("button")
                                 )
                                     return;
-                                div.querySelector("input").click();
+                                item.isSelected = !item.isSelected;
+                                renderApp();
                             };
 
                             fragment.appendChild(div);
