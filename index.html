@@ -483,27 +483,15 @@
                 }
             }
 
-            /* Undo bar */
-            #undo-bar {
-                position: fixed;
-                bottom: 1.5rem;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(16, 18, 24, 0.95);
-                border: 1px solid var(--border);
-                border-radius: var(--radius);
-                padding: 0.5rem 0.75rem;
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-                font-size: 0.8125rem;
-                backdrop-filter: blur(8px);
-                z-index: 100;
-                animation: toast-in 0.15s ease;
+            /* Undo button in toolbar */
+            #btn-undo {
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.15s;
             }
-            #undo-bar button {
-                font-size: 0.75rem;
-                padding: 0.25rem 0.625rem;
+            #btn-undo.visible {
+                opacity: 1;
+                pointer-events: auto;
             }
 
             /* Header row */
@@ -596,12 +584,7 @@
                 <div
                     id="work-area"
                     class="hidden"
-                    style="
-                        flex: 1;
-                        display: flex;
-                        flex-direction: column;
-                        overflow: hidden;
-                    "
+                    style="flex: 1; flex-direction: column; overflow: hidden"
                 >
                     <div
                         style="
@@ -616,6 +599,13 @@
                             placeholder="Search files…"
                             style="flex: 1; padding: 0.4rem 0.6rem"
                         />
+                        <button
+                            id="btn-undo"
+                            class="action-btn text-xs"
+                            title="Undo last action (Ctrl+Z)"
+                        >
+                            Undo
+                        </button>
                     </div>
                     <div class="toolbar-row text-xs muted">
                         <label
@@ -1061,7 +1051,7 @@
                     snapshot: snapshotState(),
                 });
                 if (state.undoStack.length > 30) state.undoStack.shift();
-                showUndoBar(description);
+                updateUndoBtn();
             }
 
             function popUndo() {
@@ -1075,30 +1065,18 @@
                     }
                 }
                 renderApp();
-                hideUndoBar();
+                updateUndoBtn();
                 toast("Undone: " + entry.description);
             }
 
-            function showUndoBar(description) {
-                hideUndoBar();
-                const bar = document.createElement("div");
-                bar.id = "undo-bar";
-                bar.innerHTML = `<span class="muted text-sm">${description}</span>`;
-                const btn = document.createElement("button");
-                btn.textContent = "Undo";
-                btn.className = "primary";
-                btn.onclick = popUndo;
-                bar.appendChild(btn);
-                document.body.appendChild(bar);
-                // Auto-hide after 5s
-                bar._timer = setTimeout(hideUndoBar, 5000);
-            }
-
-            function hideUndoBar() {
-                const bar = $("undo-bar");
-                if (bar) {
-                    clearTimeout(bar._timer);
-                    bar.remove();
+            function updateUndoBtn() {
+                const btn = $("btn-undo");
+                if (state.undoStack.length > 0) {
+                    const last = state.undoStack[state.undoStack.length - 1];
+                    btn.classList.add("visible");
+                    btn.title = `Undo: ${last.description} (Ctrl+Z)`;
+                } else {
+                    btn.classList.remove("visible");
                 }
             }
 
@@ -1673,7 +1651,9 @@
 
             function showWorkspace() {
                 $("drop-zone").classList.add("hidden");
-                $("work-area").style.display = "flex";
+                const wa = $("work-area");
+                wa.classList.remove("hidden");
+                wa.style.display = "flex";
                 $("right-panel").classList.remove("hidden");
                 $("btn-reset").classList.remove("hidden");
             }
@@ -1703,6 +1683,9 @@
             };
 
             $("btn-reset").onclick = () => location.reload();
+            $("btn-undo").onclick = () => {
+                if (state.undoStack.length > 0) popUndo();
+            };
 
             $("search-input").oninput = (e) => {
                 state.searchQuery = e.target.value.toLowerCase();
