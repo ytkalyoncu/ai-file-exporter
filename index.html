@@ -548,14 +548,28 @@
                             />
                         </svg>
                         AI Context Studio
+                        <span
+                            class="text-xs muted"
+                            style="font-weight: 400"
+                            >v0.3.0</span
+                        >
                     </div>
-                    <button
-                        id="btn-reset"
-                        class="hidden text-xs"
-                        title="Reset All"
-                    >
-                        Clear
-                    </button>
+                    <div class="toolbar">
+                        <button
+                            id="btn-add-files"
+                            class="hidden action-btn text-xs"
+                            title="Add more files"
+                        >
+                            + Add
+                        </button>
+                        <button
+                            id="btn-reset"
+                            class="hidden text-xs"
+                            title="Reset All"
+                        >
+                            Clear
+                        </button>
+                    </div>
                 </div>
 
                 <div id="drop-zone">
@@ -653,7 +667,7 @@
                         <input
                             type="text"
                             id="ignore-input"
-                            placeholder="e.g. *.test.ts, *.spec.js — press Enter"
+                            placeholder="e.g. *.test.ts, .env, .* (dot-dirs) — Enter"
                         />
                     </div>
 
@@ -934,6 +948,14 @@
                 setTimeout(() => (btn.innerHTML = original), duration);
             }
 
+            function debounce(fn, ms) {
+                let timer;
+                return (...args) => {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => fn(...args), ms);
+                };
+            }
+
             // ─── Gitignore Parser (supports **, !, ?, negation) ─────────────────
             function parseGitignore(content, basePath) {
                 const rules = [];
@@ -1021,18 +1043,28 @@
                 return ignored;
             }
 
-            // ─── Custom ignore pattern matching (simple glob) ───────────────────
+            // ─── Custom ignore pattern matching (checks dirs too) ────────────────
+            const _ignoreRegexCache = new Map();
             function matchesCustomIgnore(filePath, patterns) {
-                const fileName = filePath.split("/").pop();
+                if (patterns.length === 0) return false;
+                const parts = filePath.split("/");
+                const fileName = parts[parts.length - 1];
                 return patterns.some((pattern) => {
+                    let regex = _ignoreRegexCache.get(pattern);
+                    if (!regex) {
+                        regex = gitignorePatternToRegex(pattern, false);
+                        _ignoreRegexCache.set(pattern, regex);
+                    }
                     if (pattern.includes("/")) {
-                        // Path pattern
-                        const regex = gitignorePatternToRegex(pattern, false);
                         return regex.test(filePath);
                     }
-                    // Filename-only pattern
-                    const regex = gitignorePatternToRegex(pattern, false);
-                    return regex.test(fileName);
+                    // Check filename
+                    if (regex.test(fileName)) return true;
+                    // Also check each directory segment (e.g. .* matches .hidden/)
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        if (regex.test(parts[i])) return true;
+                    }
+                    return false;
                 });
             }
 
@@ -1173,9 +1205,11 @@
                 renderApp();
             }
 
-            // ─── Visibility ─────────────────────────────────────────────────────
+            // ─── Visibility (cached per render cycle) ────────────────────────────
+            let _cachedVisible = null;
             function getVisibleFiles() {
-                return state.files.filter((f) => {
+                if (_cachedVisible) return _cachedVisible;
+                _cachedVisible = state.files.filter((f) => {
                     if (f.isExcluded) return false;
                     if (state.useGitignore && f.isGitignored) return false;
                     if (matchesCustomIgnore(f.path, state.customIgnorePatterns))
@@ -1187,10 +1221,31 @@
                         return false;
                     return true;
                 });
+                return _cachedVisible;
+            }
+
+            function computeFolderStats(visibleFiles) {
+                const stats = new Map();
+                for (const f of visibleFiles) {
+                    const parts = f.path.split("/");
+                    let current = "";
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        current += parts[i] + "/";
+                        if (!stats.has(current))
+                            stats.set(current, { total: 0, selected: 0 });
+                        const s = stats.get(current);
+                        s.total++;
+                        if (f.isSelected) s.selected++;
+                    }
+                }
+                return stats;
             }
 
             // ─── Tree Rendering ─────────────────────────────────────────────────
             function renderApp() {
+                _cachedVisible = null;
+                const visible = getVisibleFiles();
+                state._folderStats = computeFolderStats(visible);
                 buildTree();
                 updateStats();
                 generateFS();
@@ -1295,17 +1350,15 @@
                     else state.expandedPaths.delete(path);
                 });
 
-                // Folder files
+                // Folder files — use pre-computed stats (O(1) lookup)
                 const prefix = path + "/";
-                const folderFiles = getVisibleFiles().filter((f) =>
-                    f.path.startsWith(prefix),
-                );
-                const selectedCount = folderFiles.filter(
-                    (f) => f.isSelected,
-                ).length;
+                const fStats = state._folderStats.get(prefix) || {
+                    total: 0,
+                    selected: 0,
+                };
+                const selectedCount = fStats.selected;
                 const allSelected =
-                    selectedCount === folderFiles.length &&
-                    folderFiles.length > 0;
+                    fStats.selected === fStats.total && fStats.total > 0;
 
                 const summary = document.createElement("summary");
 
@@ -1319,7 +1372,10 @@
                     pushUndo(
                         allSelected ? `Deselect ${name}/` : `Select ${name}/`,
                     );
-                    folderFiles.forEach((f) => (f.isSelected = !allSelected));
+                    for (const f of getVisibleFiles()) {
+                        if (f.path.startsWith(prefix))
+                            f.isSelected = !allSelected;
+                    }
                     renderApp();
                 };
 
@@ -1531,7 +1587,19 @@
                     if (!covered) lines.push(`+ ${f.path}`);
                 }
 
-                $("state-input").value = lines.sort().join("\n");
+                // Sort: - (excluded) first, then + folders, then + files, alpha within
+                lines.sort((a, b) => {
+                    const ta = a[0],
+                        tb = b[0];
+                    if (ta !== tb) return ta === "-" ? -1 : 1;
+                    const pa = a.slice(2),
+                        pb = b.slice(2);
+                    const fa = pa.endsWith("/"),
+                        fb = pb.endsWith("/");
+                    if (fa !== fb) return fa ? -1 : 1;
+                    return pa.localeCompare(pb);
+                });
+                $("state-input").value = lines.join("\n");
             }
 
             function parseStateText() {
@@ -1539,7 +1607,10 @@
                 const lines = text
                     .split("\n")
                     .map((l) => l.trim())
-                    .filter(Boolean);
+                    .filter(
+                        (l) =>
+                            l && (l.startsWith("+") || l.startsWith("-")),
+                    );
 
                 // Reset all
                 state.files.forEach((f) => {
@@ -1687,9 +1758,10 @@
                 if (state.undoStack.length > 0) popUndo();
             };
 
+            const _debouncedRender = debounce(() => renderApp(), 120);
             $("search-input").oninput = (e) => {
                 state.searchQuery = e.target.value.toLowerCase();
-                renderApp();
+                _debouncedRender();
             };
 
             $("toggle-gitignore").onchange = (e) => {
