@@ -551,7 +551,7 @@
                         <span
                             class="text-xs muted"
                             style="font-weight: 400"
-                            >v0.3.0</span
+                            >v0.4.0</span
                         >
                     </div>
                     <div class="toolbar">
@@ -588,6 +588,14 @@
                     <input
                         type="file"
                         id="file-input"
+                        webkitdirectory
+                        directory
+                        multiple
+                        class="hidden"
+                    />
+                    <input
+                        type="file"
+                        id="add-file-input"
                         webkitdirectory
                         directory
                         multiple
@@ -956,6 +964,22 @@
                 };
             }
 
+            async function copyToClipboard(text, successMsg = "Copied") {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    toast(successMsg);
+                } catch (_) {
+                    toast("Copy failed");
+                }
+            }
+
+            function formatSize(bytes) {
+                if (bytes < 1024) return bytes + "B";
+                if (bytes < 1024 * 1024)
+                    return (bytes / 1024).toFixed(1) + "K";
+                return (bytes / (1024 * 1024)).toFixed(1) + "M";
+            }
+
             // ─── Gitignore Parser (supports **, !, ?, negation) ─────────────────
             function parseGitignore(content, basePath) {
                 const rules = [];
@@ -1113,11 +1137,16 @@
             }
 
             // ─── File System Processing ─────────────────────────────────────────
-            async function processFileSystem(items) {
-                state.files = [];
-                state.gitignoreMatchers = [];
-                state.expandedPaths.clear();
-                state.undoStack = [];
+            async function processFileSystem(items, append = false) {
+                if (!append) {
+                    state.files = [];
+                    state.gitignoreMatchers = [];
+                    state.expandedPaths.clear();
+                    state.undoStack = [];
+                }
+                const existingPaths = new Set(
+                    state.files.map((f) => f.path),
+                );
 
                 const entries = [];
 
@@ -1178,8 +1207,10 @@
                     }
                 }
 
-                // Second pass: build file list
+                // Second pass: build file list (skip duplicates on append)
+                let addedCount = 0;
                 for (const item of entries) {
+                    if (existingPaths.has(item.path)) continue;
                     const ext = item.name.split(".").pop().toLowerCase();
                     if (BINARY_EXTS.has(ext)) continue;
 
@@ -1200,6 +1231,10 @@
                         isExcluded: false,
                         isGitignored: isIgnored,
                     });
+                    addedCount++;
+                }
+                if (append && addedCount > 0) {
+                    toast(`Added ${addedCount} new files`);
                 }
 
                 renderApp();
@@ -1431,15 +1466,11 @@
                 btnCopy.onclick = async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    try {
-                        const content = await fileObj.fileRef.text();
-                        await navigator.clipboard.writeText(
-                            `// File: ${fileObj.path}\n${content}`,
-                        );
-                        toast("Copied: " + name);
-                    } catch (_) {
-                        toast("Copy failed");
-                    }
+                    const content = await fileObj.fileRef.text();
+                    copyToClipboard(
+                        `// File: ${fileObj.path}\n${content}`,
+                        "Copied: " + name,
+                    );
                 };
 
                 const btnExclude = document.createElement("button");
@@ -1458,7 +1489,7 @@
                 div.appendChild(cb);
                 div.insertAdjacentHTML(
                     "beforeend",
-                    ` ${ICONS.file} <span class="name-label mono text-sm">${name}</span>`,
+                    ` ${ICONS.file} <span class="name-label mono text-sm">${name}</span> <span class="muted text-xs">${formatSize(fileObj.size)}</span>`,
                 );
                 div.appendChild(actions);
 
@@ -1727,7 +1758,18 @@
                 wa.style.display = "flex";
                 $("right-panel").classList.remove("hidden");
                 $("btn-reset").classList.remove("hidden");
+                $("btn-add-files").classList.remove("hidden");
             }
+
+            // Add more files
+            const addFileInput = $("add-file-input");
+            $("btn-add-files").onclick = () => addFileInput.click();
+            addFileInput.onchange = async (e) => {
+                if (e.target.files.length > 0) {
+                    await processFileSystem(e.target.files, true);
+                    e.target.value = "";
+                }
+            };
 
             dropZone.ondragover = (e) => {
                 e.preventDefault();
@@ -1766,12 +1808,6 @@
 
             $("toggle-gitignore").onchange = (e) => {
                 state.useGitignore = e.target.checked;
-                // Re-apply gitignore visibility
-                state.files.forEach((f) => {
-                    if (f.isGitignored && !f.isExcluded) {
-                        f.isSelected = !state.useGitignore;
-                    }
-                });
                 renderApp();
             };
 
@@ -1818,10 +1854,8 @@
                 generateFS();
             };
 
-            $("btn-copy-fs").onclick = async () => {
-                await navigator.clipboard.writeText($("fs-preview").value);
-                toast("Structure copied");
-            };
+            $("btn-copy-fs").onclick = () =>
+                copyToClipboard($("fs-preview").value, "Structure copied");
 
             document.querySelectorAll(".tab-btn").forEach((btn) => {
                 btn.onclick = () => {
@@ -1889,21 +1923,52 @@
                 }
             };
 
-            // Keyboard shortcut: Ctrl+Z for undo
+            // Keyboard shortcuts
             document.addEventListener("keydown", (e) => {
+                const inInput =
+                    document.activeElement.tagName === "TEXTAREA" ||
+                    document.activeElement.tagName === "INPUT";
+
+                // Escape: clear search
+                if (e.key === "Escape") {
+                    const search = $("search-input");
+                    if (search.value) {
+                        search.value = "";
+                        state.searchQuery = "";
+                        renderApp();
+                        search.blur();
+                    }
+                    return;
+                }
+
+                if (inInput) return;
+
+                // Ctrl+Z: undo
                 if (
                     (e.ctrlKey || e.metaKey) &&
                     e.key === "z" &&
                     state.undoStack.length > 0
                 ) {
-                    // Don't intercept if user is typing in a textarea/input
-                    if (
-                        document.activeElement.tagName === "TEXTAREA" ||
-                        document.activeElement.tagName === "INPUT"
-                    )
-                        return;
                     e.preventDefault();
                     popUndo();
+                    return;
+                }
+
+                // Ctrl+A: select/deselect all visible
+                if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+                    if (state.files.length === 0) return;
+                    e.preventDefault();
+                    const visible = getVisibleFiles();
+                    const allSelected = visible.every(
+                        (f) => f.isSelected,
+                    );
+                    pushUndo(
+                        allSelected ? "Deselect all" : "Select all",
+                    );
+                    visible.forEach(
+                        (f) => (f.isSelected = !allSelected),
+                    );
+                    renderApp();
                 }
             });
         </script>
