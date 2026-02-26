@@ -521,6 +521,35 @@
                 padding: 0 0.25rem;
             }
 
+            /* Extension chips */
+            #ext-bar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+                margin-top: 0.5rem;
+            }
+            .ext-chip {
+                background: rgba(96, 165, 250, 0.08);
+                border: 1px solid rgba(96, 165, 250, 0.2);
+                color: var(--text-muted);
+                border-radius: 4px;
+                padding: 0.1rem 0.4rem;
+                font-size: 0.6875rem;
+                font-family: var(--font-mono);
+                cursor: pointer;
+                transition: all 0.15s;
+                user-select: none;
+            }
+            .ext-chip:hover {
+                background: rgba(96, 165, 250, 0.15);
+                color: var(--file-color);
+            }
+            .ext-chip.active {
+                background: rgba(96, 165, 250, 0.2);
+                border-color: var(--file-color);
+                color: var(--file-color);
+            }
+
             /* Selection helpers */
             textarea {
                 user-select: text;
@@ -549,7 +578,7 @@
                         </svg>
                         AI Context Studio
                         <span class="text-xs muted" style="font-weight: 400"
-                            >v0.4.1</span
+                            >v0.4.2</span
                         >
                     </div>
                     <div class="toolbar">
@@ -616,7 +645,7 @@
                         <input
                             type="text"
                             id="search-input"
-                            placeholder="Search files…"
+                            placeholder="Search files… (.ts .js to filter)"
                             style="flex: 1; padding: 0.4rem 0.6rem"
                         />
                         <button
@@ -677,6 +706,7 @@
                         />
                     </div>
 
+                    <div id="ext-bar"></div>
                     <div id="tree-container"></div>
                 </div>
             </div>
@@ -1286,19 +1316,37 @@
                 renderApp();
             }
 
+            // ─── Search query parser (extension filters + text) ──────────────
+            function parseSearchQuery(query) {
+                if (!query) return { exts: [], text: "" };
+                const tokens = query.split(/[\s,]+/).filter(Boolean);
+                const exts = [];
+                const textParts = [];
+                for (const t of tokens) {
+                    if (/^\.[a-z0-9]+$/i.test(t)) {
+                        exts.push(t.toLowerCase());
+                    } else {
+                        textParts.push(t);
+                    }
+                }
+                return { exts, text: textParts.join(" ") };
+            }
+
             // ─── Visibility (cached per render cycle) ────────────────────────────
             let _cachedVisible = null;
             function getVisibleFiles() {
                 if (_cachedVisible) return _cachedVisible;
+                const { exts, text } = parseSearchQuery(state.searchQuery);
                 _cachedVisible = state.files.filter((f) => {
                     if (f.isExcluded) return false;
                     if (state.useGitignore && f.isGitignored) return false;
                     if (matchesCustomIgnore(f.path, state.customIgnorePatterns))
                         return false;
-                    if (
-                        state.searchQuery &&
-                        !f.path.toLowerCase().includes(state.searchQuery)
-                    )
+                    if (exts.length > 0) {
+                        const fileExt = "." + f.name.split(".").pop().toLowerCase();
+                        if (!exts.includes(fileExt)) return false;
+                    }
+                    if (text && !f.path.toLowerCase().includes(text))
                         return false;
                     return true;
                 });
@@ -1323,11 +1371,61 @@
                 return stats;
             }
 
+            // ─── Extension Bar ────────────────────────────────────────────────
+            function computeTopExtensions() {
+                const counts = new Map();
+                for (const f of state.files) {
+                    if (f.isExcluded) continue;
+                    if (state.useGitignore && f.isGitignored) continue;
+                    if (matchesCustomIgnore(f.path, state.customIgnorePatterns)) continue;
+                    const ext = "." + f.name.split(".").pop().toLowerCase();
+                    if (ext === "." + f.name.toLowerCase()) continue; // no extension
+                    counts.set(ext, (counts.get(ext) || 0) + 1);
+                }
+                return Array.from(counts.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+            }
+
+            function renderExtBar() {
+                const bar = $("ext-bar");
+                bar.innerHTML = "";
+                const top = computeTopExtensions();
+                if (top.length === 0) return;
+
+                const { exts: activeExts } = parseSearchQuery(state.searchQuery);
+
+                for (const [ext, count] of top) {
+                    const chip = document.createElement("span");
+                    chip.className = "ext-chip" + (activeExts.includes(ext) ? " active" : "");
+                    chip.textContent = `${ext} ${count}`;
+                    chip.onclick = () => toggleExtFilter(ext);
+                    bar.appendChild(chip);
+                }
+            }
+
+            function toggleExtFilter(ext) {
+                const input = $("search-input");
+                const { exts, text } = parseSearchQuery(state.searchQuery);
+                const idx = exts.indexOf(ext);
+                if (idx >= 0) {
+                    exts.splice(idx, 1);
+                } else {
+                    exts.push(ext);
+                }
+                const parts = [...exts];
+                if (text) parts.push(text);
+                input.value = parts.join(" ");
+                state.searchQuery = input.value.toLowerCase();
+                renderApp();
+            }
+
             // ─── Tree Rendering ─────────────────────────────────────────────────
             function renderApp() {
                 _cachedVisible = null;
                 const visible = getVisibleFiles();
                 state._folderStats = computeFolderStats(visible);
+                renderExtBar();
                 buildTree();
                 updateStats();
                 generateFS();
@@ -1853,7 +1951,7 @@
 
             const _debouncedRender = debounce(() => renderApp(), 120);
             $("search-input").oninput = (e) => {
-                state.searchQuery = e.target.value.toLowerCase();
+                state.searchQuery = e.target.value.trim().toLowerCase();
                 _debouncedRender();
             };
 

@@ -101,6 +101,6 @@ state._folderStats           // Map<path/, {total, selected}> — computed per r
 
 ## Versioning
 
-Version is displayed in the header UI. Update both the `<span>` in HTML and commit message when bumping. Current: `v0.4.1`.
+Version is displayed in the header UI. Update both the `<span>` in HTML and commit message when bumping. Current: `v0.4.2`.
 
 **IMPORTANT**: Always bump the version when adding features or making changes. Never forget this step. Patch bump (0.x.Y) for small features/fixes, minor bump (0.X.0) for significant features.
