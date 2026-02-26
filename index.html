@@ -548,10 +548,8 @@
                             />
                         </svg>
                         AI Context Studio
-                        <span
-                            class="text-xs muted"
-                            style="font-weight: 400"
-                            >v0.4.0</span
+                        <span class="text-xs muted" style="font-weight: 400"
+                            >v0.4.1</span
                         >
                     </div>
                     <div class="toolbar">
@@ -796,6 +794,50 @@
                                     />
                                     Selected Only
                                 </label>
+                                <label
+                                    class="text-xs muted"
+                                    style="
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 0.35rem;
+                                        cursor: pointer;
+                                    "
+                                >
+                                    <input
+                                        type="checkbox"
+                                        id="fs-show-tokens"
+                                    />
+                                    Tokens
+                                </label>
+                                <label
+                                    id="fs-token-min-label"
+                                    class="text-xs muted hidden"
+                                    style="
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 0.25rem;
+                                    "
+                                >
+                                    min
+                                    <input
+                                        type="number"
+                                        id="fs-token-min"
+                                        value="500"
+                                        min="0"
+                                        step="50"
+                                        style="
+                                            width: 4rem;
+                                            padding: 0.1rem 0.3rem;
+                                            font-size: 0.6875rem;
+                                            font-family: var(--font-mono);
+                                            background: rgba(0, 0, 0, 0.35);
+                                            border: 1px solid var(--border);
+                                            color: var(--text-main);
+                                            border-radius: 4px;
+                                            outline: none;
+                                        "
+                                    />
+                                </label>
                                 <button
                                     id="btn-copy-fs"
                                     class="action-btn"
@@ -936,6 +978,8 @@
                 fsSelectedOnly: true,
                 expandedPaths: new Set(),
                 undoStack: [], // { description, snapshot }
+                fsShowTokens: false,
+                fsTokenMin: 500,
             };
 
             // ─── Helpers ────────────────────────────────────────────────────────
@@ -975,9 +1019,13 @@
 
             function formatSize(bytes) {
                 if (bytes < 1024) return bytes + "B";
-                if (bytes < 1024 * 1024)
-                    return (bytes / 1024).toFixed(1) + "K";
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + "K";
                 return (bytes / (1024 * 1024)).toFixed(1) + "M";
+            }
+
+            function formatTokens(bytes) {
+                const t = estimateTokens(bytes);
+                return t >= 1000 ? (t / 1000).toFixed(1) + "k" : String(t);
             }
 
             // ─── Gitignore Parser (supports **, !, ?, negation) ─────────────────
@@ -1144,9 +1192,7 @@
                     state.expandedPaths.clear();
                     state.undoStack = [];
                 }
-                const existingPaths = new Set(
-                    state.files.map((f) => f.path),
-                );
+                const existingPaths = new Set(state.files.map((f) => f.path));
 
                 const entries = [];
 
@@ -1267,9 +1313,10 @@
                     for (let i = 0; i < parts.length - 1; i++) {
                         current += parts[i] + "/";
                         if (!stats.has(current))
-                            stats.set(current, { total: 0, selected: 0 });
+                            stats.set(current, { total: 0, selected: 0, bytes: 0 });
                         const s = stats.get(current);
                         s.total++;
+                        s.bytes += f.size;
                         if (f.isSelected) s.selected++;
                     }
                 }
@@ -1427,11 +1474,13 @@
                 };
                 actions.appendChild(btnExclude);
 
+                const folderTokens = formatTokens(fStats.bytes);
+
                 summary.innerHTML = ICONS.chevron + " ";
                 summary.appendChild(cb);
                 summary.insertAdjacentHTML(
                     "beforeend",
-                    ` ${ICONS.folder} <span class="name-label mono text-sm">${name}</span>`,
+                    ` ${ICONS.folder} <span class="name-label mono text-sm">${name}</span> <span class="muted" style="font-size:0.625rem;opacity:0.5">~${folderTokens}</span>`,
                 );
                 summary.appendChild(actions);
 
@@ -1489,7 +1538,7 @@
                 div.appendChild(cb);
                 div.insertAdjacentHTML(
                     "beforeend",
-                    ` ${ICONS.file} <span class="name-label mono text-sm">${name}</span> <span class="muted text-xs">${formatSize(fileObj.size)}</span>`,
+                    ` ${ICONS.file} <span class="name-label mono text-sm">${name}</span> <span class="muted text-xs">${formatSize(fileObj.size)}</span> <span class="muted" style="font-size:0.625rem;opacity:0.5">~${formatTokens(fileObj.size)}</span>`,
                 );
                 div.appendChild(actions);
 
@@ -1546,13 +1595,16 @@
                 if (state.fsSelectedOnly)
                     files = files.filter((f) => f.isSelected);
 
+                const showTok = state.fsShowTokens;
                 const dirs = new Map();
                 for (const f of files) {
                     const parts = f.path.split("/");
                     const name = parts.pop();
                     const dir = parts.length > 0 ? parts.join("/") + "/" : "/";
                     if (!dirs.has(dir)) dirs.set(dir, []);
-                    dirs.get(dir).push(name);
+                    const tok = estimateTokens(f.size);
+                    const label = showTok && tok >= state.fsTokenMin ? `${name} ${formatTokens(f.size)}` : name;
+                    dirs.get(dir).push(label);
                 }
 
                 let out = "";
@@ -1639,8 +1691,7 @@
                     .split("\n")
                     .map((l) => l.trim())
                     .filter(
-                        (l) =>
-                            l && (l.startsWith("+") || l.startsWith("-")),
+                        (l) => l && (l.startsWith("+") || l.startsWith("-")),
                     );
 
                 // Reset all
@@ -1854,6 +1905,23 @@
                 generateFS();
             };
 
+            $("fs-show-tokens").onchange = (e) => {
+                state.fsShowTokens = e.target.checked;
+                const minLabel = $("fs-token-min-label");
+                if (e.target.checked) {
+                    minLabel.classList.remove("hidden");
+                    minLabel.style.display = "flex";
+                } else {
+                    minLabel.classList.add("hidden");
+                }
+                generateFS();
+            };
+
+            $("fs-token-min").onchange = (e) => {
+                state.fsTokenMin = Math.max(0, parseInt(e.target.value) || 0);
+                generateFS();
+            };
+
             $("btn-copy-fs").onclick = () =>
                 copyToClipboard($("fs-preview").value, "Structure copied");
 
@@ -1959,15 +2027,9 @@
                     if (state.files.length === 0) return;
                     e.preventDefault();
                     const visible = getVisibleFiles();
-                    const allSelected = visible.every(
-                        (f) => f.isSelected,
-                    );
-                    pushUndo(
-                        allSelected ? "Deselect all" : "Select all",
-                    );
-                    visible.forEach(
-                        (f) => (f.isSelected = !allSelected),
-                    );
+                    const allSelected = visible.every((f) => f.isSelected);
+                    pushUndo(allSelected ? "Deselect all" : "Select all");
+                    visible.forEach((f) => (f.isSelected = !allSelected));
                     renderApp();
                 }
             });

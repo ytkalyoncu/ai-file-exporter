@@ -57,6 +57,7 @@ state.useGitignore           // toggle
 state.searchQuery            // lowercase search string
 state.format                 // "txt" | "md" | "xml"
 state.fsSelectedOnly         // show only selected in structure preview
+state.fsShowTokens           // show token counts in file structure output
 state.expandedPaths          // Set<string> for tree open/close persistence
 state.undoStack[]            // { description, snapshot[] }
 state._folderStats           // Map<path/, {total, selected}> — computed per render
@@ -100,4 +101,6 @@ state._folderStats           // Map<path/, {total, selected}> — computed per r
 
 ## Versioning
 
-Version is displayed in the header UI. Update both the `<span>` in HTML and commit message when bumping. Current: `v0.4.0`.
+Version is displayed in the header UI. Update both the `<span>` in HTML and commit message when bumping. Current: `v0.4.1`.
+
+**IMPORTANT**: Always bump the version when adding features or making changes. Never forget this step. Patch bump (0.x.Y) for small features/fixes, minor bump (0.X.0) for significant features.
